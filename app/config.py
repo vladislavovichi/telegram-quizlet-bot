@@ -4,6 +4,7 @@ from pydantic import Field
 
 class Settings(BaseSettings):
     BOT_TOKEN: str = Field("", description="Telegram bot token")
+    DB_DSN: str = Field("sqlite+aiosqlite:///./bot.db", description="SQLAlchemy DSN")
     
     model_config = {
         "env_file": ".env",
