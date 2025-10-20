@@ -14,5 +14,5 @@ class User(Base):
 
     def __repr__(self):
         return (
-            f"<User id={self.id} tg_id={self.tg_id} bonus_points={self.owner_collections}>"
+            f"<User id={self.id} tg_id={self.tg_id}>"
         )
