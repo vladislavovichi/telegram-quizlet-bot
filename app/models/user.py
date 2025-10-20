@@ -8,12 +8,6 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     tg_id = Column(BigInteger, unique=True, nullable=False, index=True)
     username = Column(String(64), nullable=True)
-    owner_collections = Column(ARRAY(Integer),
-                     nullable=False,
-                     server_default=text("ARRAY[]::integer[]"))
-    collaborator_collections = Column(ARRAY(Integer),
-                     nullable=False,
-                     server_default=text("ARRAY[]::integer[]"))
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
