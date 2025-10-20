@@ -10,6 +10,7 @@ from app.services.db import make_engine_and_session
 
 log = logging.getLogger(__name__)
 
+
 async def create_app() -> SimpleNamespace:
     bot = Bot(
         token=settings.BOT_TOKEN,
