@@ -18,7 +18,6 @@ def upgrade():
             nullable=False,
             server_default=sa.text('now()')
         ),
-        sa.UniqueConstraint('tg_id', name='uq_users_tg_id'),
     )
 
     op.create_index("ix_users_tg_id", "users", ["tg_id"], unique=True)
