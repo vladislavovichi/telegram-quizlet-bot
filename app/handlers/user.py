@@ -2,6 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram import F
 from app.services.db import get_session
+from app.keyboards.user import index_reply_kb
 
 
 def get_user_router(async_session_maker) -> Router:
@@ -11,6 +12,7 @@ def get_user_router(async_session_maker) -> Router:
     async def cmd_start(message: types.Message):
         await message.answer(
             "Добро пожаловать! Воспользуйся клавиатурой ниже для доступа к возможностям.",
+            reply_markup=index_reply_kb,
         )
 
     @router.message(F.text == "👤 Мой профиль")
