@@ -30,7 +30,10 @@ def _try_import(name: str):
 
 _user_mod = _try_import("user")
 
-def _filter_kwargs_for_callable(callable_obj: Any, deps: Dict[str, Any]) -> Dict[str, Any]:
+
+def _filter_kwargs_for_callable(
+    callable_obj: Any, deps: Dict[str, Any]
+) -> Dict[str, Any]:
     try:
         sig = inspect.signature(callable_obj)
     except (ValueError, TypeError):
@@ -38,7 +41,8 @@ def _filter_kwargs_for_callable(callable_obj: Any, deps: Dict[str, Any]) -> Dict
     names = [
         n
         for n, p in sig.parameters.items()
-        if p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+        if p.kind
+        in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
     ]
     return {k: v for k, v in deps.items() if k in names}
 
@@ -65,7 +69,10 @@ def _resolve_router(obj: Any, deps: Dict[str, Any]) -> Router:
             args = []
             missing = []
             for name, param in sig.parameters.items():
-                if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                if param.kind in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                ):
                     if name in deps:
                         args.append(deps[name])
                     elif param.default is inspect._empty:
@@ -77,9 +84,13 @@ def _resolve_router(obj: Any, deps: Dict[str, Any]) -> Router:
                 return r
             raise TypeError(f"Router factory returned non-Router (positional): {r!r}")
         except TypeError as e_pos:
-            raise TypeError(f"Callable router factory is not compatible: {e_pos}") from e_pos
+            raise TypeError(
+                f"Callable router factory is not compatible: {e_pos}"
+            ) from e_pos
 
-    raise TypeError(f"router should be Router or a factory returning Router, got {obj!r}")
+    raise TypeError(
+        f"router should be Router or a factory returning Router, got {obj!r}"
+    )
 
 
 def register_handlers(
@@ -113,10 +124,21 @@ def register_handlers(
                 try:
                     router = _resolve_router(candidate, deps)
                     dp.include_router(router)
-                    log.info("Included router from %s: attribute=%s", module.__name__, name)
+                    log.info(
+                        "Included router from %s: attribute=%s", module.__name__, name
+                    )
                     resolved = True
                     break
                 except Exception as e:
-                    log.exception("Failed to include router from %s.%s: %s", module.__name__, name, e)
+                    log.exception(
+                        "Failed to include router from %s.%s: %s",
+                        module.__name__,
+                        name,
+                        e,
+                    )
         if not resolved:
-            log.warning("No usable router found in module %s (checked %s)", module.__name__, names)
+            log.warning(
+                "No usable router found in module %s (checked %s)",
+                module.__name__,
+                names,
+            )

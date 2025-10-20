@@ -4,7 +4,7 @@ from aiogram import F
 from app.services.db import get_session
 
 
-def get_user_router(async_session_maker, ranks, admin_ids, catalog_file) -> Router:
+def get_user_router(async_session_maker) -> Router:
     router = Router()
 
     @router.message(Command("start"))
@@ -17,6 +17,7 @@ def get_user_router(async_session_maker, ranks, admin_ids, catalog_file) -> Rout
     async def cmd_profile(message: types.Message):
         tg = message.from_user
         async with get_session(async_session_maker) as session:
+            print(session, tg)
             await message.answer("Профиль")
 
     return router
