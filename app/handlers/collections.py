@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from aiogram import Router, F, types
+
 from app.repos.base import with_repos
 from app.keyboards.collections import (
     collections_kb,
@@ -9,8 +10,10 @@ from app.keyboards.collections import (
     item_view_kb,
     item_delete_confirm_kb,
 )
+from app.keyboards.common import back_to_item_kb, back_to_collections_kb
 from app.filters.pending import HasPendingAction
 from app.middlewares.redis_kv import RedisKVMiddleware
+from app.keyboards.user import main_reply_kb
 
 MAX_ITEMS_PER_COLLECTION = 40
 
@@ -37,6 +40,17 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             "Твои коллекции:", reply_markup=collections_kb(all_cols, page=0)
         )
 
+    # Возврат к списку коллекций
+    @router.callback_query(F.data == "col:list")
+    async def collections_list(cb: types.CallbackQuery) -> None:
+        async with with_repos(async_session_maker) as (_, users, cols, _):
+            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
+            all_cols = await cols.list_by_user(u.id)
+        await cb.message.edit_text(
+            "Твои коллекции:", reply_markup=collections_kb(all_cols, page=0)
+        )
+        await cb.answer()
+
     @router.callback_query(F.data.startswith("col:page:"))
     async def page_collections(cb: types.CallbackQuery) -> None:
         page = int(cb.data.split(":")[-1])
@@ -48,8 +62,19 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.answer()
 
+    @router.callback_query(F.data == "col:back")
+    async def back_to_main(cb: types.CallbackQuery) -> None:
+        try:
+            await cb.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await cb.message.answer("Главное меню", reply_markup=main_reply_kb)
+        await cb.answer()
+
     @router.callback_query(F.data == "col:new")
     async def start_new(cb: types.CallbackQuery) -> None:
+        key = redis_kv.pending_key(cb.from_user.id)
+        await redis_kv.set_json(key, {"type": "col:new"}, ex=redis_kv.ttl_seconds)
         await cb.message.answer("Введи название новой коллекции:")
         await cb.answer()
 
@@ -245,19 +270,36 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.answer()
 
-    @router.message(F.text, HasPendingAction())
-    async def handle_pending(message: types.Message, pending: dict, redis_kv) -> None:
+    # pending-хэндлер с явной прокидкой Redis в фильтр
+    @router.message(F.text, HasPendingAction(redis_kv))
+    async def handle_pending(message: types.Message, pending: dict) -> None:
         typ = pending.get("type")
         key = redis_kv.pending_key(message.from_user.id)
 
         async with with_repos(async_session_maker) as (_, users, cols, items):
             u = await users.get_or_create(message.from_user.id, message.from_user.username)
 
+            if typ == "col:new":
+                title = (message.text or "").strip()
+                if not title:
+                    await message.answer("Не вижу текста. Введи название коллекции:")
+                    return
+                col = await cols.create(u.id, title)
+                await redis_kv.delete(key)
+                await message.answer(
+                    f"✅ Коллекция «{col.title}» создана.",
+                    reply_markup=collection_edit_kb(col.id),
+                )
+                return
+
             if typ == "col:rename":
                 cid = int(pending["cid"])
                 ok = await cols.rename(cid, u.id, (message.text or "").strip())
                 await redis_kv.delete(key)
-                await message.answer("✅ Переименовано." if ok else "Коллекция не найдена.")
+                await message.answer(
+                    "✅ Переименовано." if ok else "Коллекция не найдена.",
+                    reply_markup=back_to_collections_kb(),
+                )
                 return
 
             if typ == "item:add:q":
@@ -306,7 +348,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     return
                 await items.update_question(item_id, new_q)
                 await redis_kv.delete(key)
-                await message.answer("✅ Вопрос обновлён.", reply_markup=item_view_kb(item_id, col.id))
+                await message.answer("✅ Вопрос обновлён.", reply_markup=back_to_item_kb(item_id))
                 return
 
             if typ == "item:edit:a":
@@ -322,7 +364,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     return
                 await items.update_answer(item_id, new_a)
                 await redis_kv.delete(key)
-                await message.answer("✅ Ответ обновлён.", reply_markup=item_view_kb(item_id, col.id))
+                await message.answer("✅ Ответ обновлён.", reply_markup=back_to_item_kb(item_id))
                 return
 
             if typ == "item:edit:qa":
@@ -339,8 +381,8 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     return
                 await items.update_both(item_id, new_q, new_a)
                 await redis_kv.delete(key)
-                await message.answer("✅ Карточка обновлена.", reply_markup=item_view_kb(item_id, col.id))
+                await message.answer("✅ Карточка обновлена.", reply_markup=back_to_item_kb(item_id))
                 return
 
-    get_collections_router.priority = -10  # type: ignore[attr-defined]
+    router.priority = -10
     return router

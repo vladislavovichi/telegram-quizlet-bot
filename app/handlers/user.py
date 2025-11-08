@@ -14,10 +14,15 @@ def get_user_router(async_session_maker) -> Router:
 
     @router.message(CommandStart())
     async def cmd_start(message: types.Message) -> None:
+        tg = message.from_user
+        if not tg:
+            return
+
         async with get_session(async_session_maker) as session:
-            tg = message.from_user
             user = (
-                await session.execute(select(User).where(User.tg_id == tg.id))
+                await session.execute(
+                    select(User).where(User.tg_id == tg.id)
+                )
             ).scalar_one_or_none()
             if not user:
                 user = User(tg_id=tg.id, username=tg.username)
@@ -26,9 +31,10 @@ def get_user_router(async_session_maker) -> Router:
 
         text = (
             "Привет! Я помогу вести коллекции карточек «вопрос-ответ».\n\n"
-            "Нажми «123» или «👀 Мои коллекции», чтобы начать."
+            "Нажми «👤 Мой профиль» или «👀 Мои коллекции», чтобы начать."
         )
         await message.answer(text, reply_markup=main_reply_kb)
 
-    get_user_router.priority = -100
+    # приоритет задаём роутеру
+    router.priority = -100
     return router

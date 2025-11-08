@@ -7,6 +7,9 @@ from app.services.redis_kv import RedisKV
 
 
 class HasPendingAction(BaseFilter):
+    def __init__(self, redis_kv: Optional[RedisKV] = None) -> None:
+        self._redis_kv = redis_kv
+
     async def __call__(
         self,
         message: types.Message,
@@ -16,7 +19,7 @@ class HasPendingAction(BaseFilter):
         if not message.from_user:
             return False
 
-        redis_kv: Optional[RedisKV] = data.get("redis_kv")
+        redis_kv: Optional[RedisKV] = self._redis_kv or data.get("redis_kv")
         if not redis_kv:
             return False
 
