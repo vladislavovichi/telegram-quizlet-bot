@@ -36,6 +36,7 @@ def collection_edit_kb(collection_id: int) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     b.button(text="➕ Добавить карточку", callback_data=f"item:add:{collection_id}")
     b.button(text="🗂 Список карточек", callback_data=f"item:list:{collection_id}:0")
+    b.button(text="🎮 Играть", callback_data=f"game:begin:{collection_id}")
     b.button(text="✏️ Переименовать", callback_data=f"col:rename:{collection_id}")
     b.button(text="🗑 Удалить коллекцию", callback_data=f"col:delete:{collection_id}")
     b.button(text="⬅️ К списку", callback_data="col:page:0")
