@@ -19,12 +19,15 @@ def game_collections_kb(collections: Sequence, page: int = 0) -> InlineKeyboardM
 
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton(text="⬅️ Назад", callback_data=f"game:page:{page-1}"))
+        nav.append(
+            InlineKeyboardButton(text="⬅️ Назад", callback_data=f"game:page:{page-1}")
+        )
     if start + PAGE_SIZE_COLLECTIONS < len(collections):
-        nav.append(InlineKeyboardButton(text="Вперед ➡️", callback_data=f"game:page:{page+1}"))
+        nav.append(
+            InlineKeyboardButton(text="Вперед ➡️", callback_data=f"game:page:{page+1}")
+        )
     if nav:
         b.row(*nav)
-
 
     b.row(InlineKeyboardButton(text="↩️ К списку коллекций", callback_data="col:list"))
     return b.as_markup()

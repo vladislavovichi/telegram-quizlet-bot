@@ -18,10 +18,10 @@ class GameSession:
     user_id: int
     collection_id: int
     order: List[int]
-    index: int = 0 
+    index: int = 0
     showing_answer: bool = False
     started_at: str = ""
-    seed: int = 0  
+    seed: int = 0
 
     @property
     def total(self) -> int:
@@ -121,6 +121,7 @@ class GameSession:
             self.index += 1
             self.showing_answer = False
 
+
 class GameData:
     def __init__(self, async_session_maker) -> None:
         self._sm = async_session_maker
@@ -133,7 +134,9 @@ class GameData:
     async def list_user_collections(self, user_owner_id: int) -> list[Collection]:
         async with self._session() as session:
             res = await session.execute(
-                select(Collection).where(Collection.owner_id == user_owner_id).order_by(Collection.created_at)
+                select(Collection)
+                .where(Collection.owner_id == user_owner_id)
+                .order_by(Collection.created_at)
             )
             return [row[0] for row in res.all()]
 
@@ -157,8 +160,9 @@ class GameData:
     async def get_item_qa(self, item_id: int) -> Optional[Tuple[str, str]]:
         async with self._session() as session:
             res = await session.execute(
-                select(CollectionItem.question, CollectionItem.answer)
-                .where(CollectionItem.id == item_id)
+                select(CollectionItem.question, CollectionItem.answer).where(
+                    CollectionItem.id == item_id
+                )
             )
             row = res.first()
             return None if not row else (row[0], row[1])

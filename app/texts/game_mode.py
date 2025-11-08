@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 def fmt_question(title: str, q: str, progress: str) -> str:
     return (
         f"🧩 <b>{escape(title)}</b>\n\n"
@@ -26,8 +27,4 @@ def fmt_choose_collection() -> str:
 
 
 def escape(text: str) -> str:
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

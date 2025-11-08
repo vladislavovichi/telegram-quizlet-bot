@@ -98,6 +98,7 @@ def item_delete_confirm_kb(item_id: int, collection_id: int) -> InlineKeyboardMa
     b.adjust(1)
     return b.as_markup()
 
+
 def collection_delete_confirm_kb(collection_id: int) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     b.button(text="✅ Да, удалить", callback_data=f"col:delete:confirm:{collection_id}")
@@ -105,6 +106,7 @@ def collection_delete_confirm_kb(collection_id: int) -> InlineKeyboardMarkup:
     b.button(text="⬅️ К списку коллекций", callback_data="col:list")
     b.adjust(1)
     return b.as_markup()
+
 
 def collection_deleted_kb() -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()

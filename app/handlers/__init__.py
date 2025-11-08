@@ -12,7 +12,7 @@ from aiogram import Router
 
 log = logging.getLogger(__name__)
 
-_HANDLERS_PKG = __name__ 
+_HANDLERS_PKG = __name__
 _PRIVATE_PREFIXES = ("_",)
 _FACTORY_PREFIX = "get_"
 _FACTORY_SUFFIX = "_router"
@@ -115,9 +115,7 @@ def _collect_module_routers(
             res = factory(**call_kwargs)
             if not isinstance(res, Router):
                 if inspect.isawaitable(res):
-                    res = dp.loop.run_until_complete(
-                        res
-                    )
+                    res = dp.loop.run_until_complete(res)
             if not isinstance(res, Router):
                 raise TypeError(f"{mod.__name__}.{fname} did not return aiogram.Router")
             refs.append(_RouterRef(source=mod.__name__, name=fname, router=res))

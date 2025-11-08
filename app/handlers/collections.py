@@ -12,12 +12,10 @@ from app.keyboards.collections import (
     collection_delete_confirm_kb,
     collection_deleted_kb,
 )
-from app.keyboards.common import back_to_collections_kb
 from app.filters.pending import HasPendingAction
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.keyboards.user import main_reply_kb
 
-from aiogram.exceptions import TelegramBadRequest
 
 MAX_ITEMS_PER_COLLECTION = 40
 
@@ -44,7 +42,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             "Твои коллекции:", reply_markup=collections_kb(all_cols, page=0)
         )
 
-    
     @router.callback_query(F.data == "col:list")
     async def collections_list(cb: types.CallbackQuery) -> None:
         async with with_repos(async_session_maker) as (_, users, cols, _):
@@ -105,10 +102,9 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.message.answer("Введи новое название коллекции:")
         await cb.answer()
-        
+
     @router.callback_query(F.data.startswith("col:delete:confirm:"))
     async def delete_col_confirm(cb: types.CallbackQuery) -> None:
-        from aiogram.exceptions import TelegramBadRequest
 
         cid = int(cb.data.split(":")[-1])
 
@@ -116,7 +112,9 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
             await cols.delete_owned(cid, u.id)
 
-        await cb.message.edit_text("🗑 Коллекция удалена.", reply_markup=collection_deleted_kb())
+        await cb.message.edit_text(
+            "🗑 Коллекция удалена.", reply_markup=collection_deleted_kb()
+        )
 
         await cb.answer("Удалено")
 
@@ -301,7 +299,9 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         key = redis_kv.pending_key(message.from_user.id)
 
         async with with_repos(async_session_maker) as (_, users, cols, items):
-            u = await users.get_or_create(message.from_user.id, message.from_user.username)
+            u = await users.get_or_create(
+                message.from_user.id, message.from_user.username
+            )
 
             if typ == "col:new":
                 title = (message.text or "").strip()
@@ -327,10 +327,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                 if not col:
                     await message.answer("Коллекция не найдена.")
                     return
-                text = (
-                    "✅ Коллекция переименована.\n\n"
-                    f"Коллекция: «{col.title}»"
-                )
+                text = "✅ Коллекция переименована.\n\n" f"Коллекция: «{col.title}»"
                 await message.answer(text, reply_markup=collection_edit_kb(col.id))
                 return
 
@@ -340,7 +337,8 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     await message.answer("Не вижу текста. Введи вопрос:")
                     return
                 await redis_kv.set_json(
-                    key, {"type": "item:add:a", "cid": int(pending["cid"]), "q": q},
+                    key,
+                    {"type": "item:add:a", "cid": int(pending["cid"]), "q": q},
                     ex=redis_kv.ttl_seconds,
                 )
                 await message.answer("✍️ Теперь введи *ответ*:", parse_mode="Markdown")
@@ -398,7 +396,11 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     f"*Вопрос:* {item.question}\n"
                     f"*Ответ:* {item.answer}"
                 )
-                await message.answer(text, parse_mode="Markdown", reply_markup=item_view_kb(item_id, col.id))
+                await message.answer(
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=item_view_kb(item_id, col.id),
+                )
                 return
 
             if typ == "item:edit:a":
@@ -421,13 +423,20 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     f"*Вопрос:* {item.question}\n"
                     f"*Ответ:* {item.answer}"
                 )
-                await message.answer(text, parse_mode="Markdown", reply_markup=item_view_kb(item_id, col.id))
+                await message.answer(
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=item_view_kb(item_id, col.id),
+                )
                 return
 
             if typ == "item:edit:qa":
                 pair = _normalize_pair(message.text or "")
                 if not pair:
-                    await message.answer("Неверный формат. Пришли: `вопрос || ответ`", parse_mode="Markdown")
+                    await message.answer(
+                        "Неверный формат. Пришли: `вопрос || ответ`",
+                        parse_mode="Markdown",
+                    )
                     return
                 new_q, new_a = pair
                 item_id = int(pending["item_id"])
@@ -445,9 +454,12 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     f"*Вопрос:* {item.question}\n"
                     f"*Ответ:* {item.answer}"
                 )
-                await message.answer(text, parse_mode="Markdown", reply_markup=item_view_kb(item_id, col.id))
+                await message.answer(
+                    text,
+                    parse_mode="Markdown",
+                    reply_markup=item_view_kb(item_id, col.id),
+                )
                 return
-
 
     router.priority = -10
     return router

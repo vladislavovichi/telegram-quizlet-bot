@@ -3,6 +3,10 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.repos.collections import CollectionsRepo
+from app.repos.items import ItemsRepo
+from app.repos.users import UsersRepo
+
 
 class Repo:
     def __init__(self, session: AsyncSession) -> None:
@@ -17,9 +21,7 @@ async def with_repos(
     from .collections import CollectionsRepo
     from .items import ItemsRepo
 
-    async with (
-        async_session_maker() as session
-    ):
+    async with async_session_maker() as session:
         users = UsersRepo(session)
         cols = CollectionsRepo(session)
         items = ItemsRepo(session)
