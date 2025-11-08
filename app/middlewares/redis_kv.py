@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, Awaitable
 from aiogram import BaseMiddleware, types
 from app.services.redis_kv import RedisKV
 
+
 class RedisKVMiddleware(BaseMiddleware):
     def __init__(self, redis_kv: RedisKV) -> None:
         super().__init__()

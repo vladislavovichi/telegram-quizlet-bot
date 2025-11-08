@@ -5,14 +5,13 @@ from typing import List, Tuple, Optional
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.collection import Collection 
-from app.models.collection import CollectionItem 
+from app.models.collection import Collection
+from app.models.collection import CollectionItem
 
 
 class ItemsRepo:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-
 
     async def _next_position(self, collection_id: int) -> int:
         res = await self.session.execute(
@@ -22,7 +21,6 @@ class ItemsRepo:
         )
         max_pos: Optional[int] = res.scalar()
         return (max_pos or 0) + 1
-
 
     async def list_pairs(self, collection_id: int) -> List[Tuple[int, str]]:
         res = await self.session.execute(
@@ -53,7 +51,9 @@ class ItemsRepo:
         col: Collection = row[1]
         return item, col
 
-    async def add(self, collection_id: int, question: str, answer: str) -> CollectionItem:
+    async def add(
+        self, collection_id: int, question: str, answer: str
+    ) -> CollectionItem:
         pos = await self._next_position(collection_id)
         item = CollectionItem(
             collection_id=collection_id,
@@ -62,7 +62,7 @@ class ItemsRepo:
             position=pos,
         )
         self.session.add(item)
-        
+
         await self.session.flush()
         await self.session.commit()
         return item

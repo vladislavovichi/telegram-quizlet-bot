@@ -7,6 +7,7 @@ down_revision = "0fb7996f0e93"
 branch_labels = None
 depends_on = None
 
+
 def upgrade() -> None:
     op.create_table(
         "collections",

@@ -20,9 +20,7 @@ def get_user_router(async_session_maker) -> Router:
 
         async with get_session(async_session_maker) as session:
             user = (
-                await session.execute(
-                    select(User).where(User.tg_id == tg.id)
-                )
+                await session.execute(select(User).where(User.tg_id == tg.id))
             ).scalar_one_or_none()
             if not user:
                 user = User(tg_id=tg.id, username=tg.username)
