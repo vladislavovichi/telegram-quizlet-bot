@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple, Dict, Iterable
 from datetime import datetime
 from contextlib import asynccontextmanager
-import secrets
+import secrets, time
 
 from sqlalchemy import select
 
@@ -12,16 +12,20 @@ from app.services.redis_kv import RedisKV
 from app.services.db import get_session
 from app.models.collection import Collection, CollectionItem
 
-
 @dataclass(slots=True)
 class GameSession:
     user_id: int
     collection_id: int
-    order: List[int]
-    index: int = 0
-    showing_answer: bool = False
-    started_at: str = ""
-    seed: int = 0
+    order: List[int]             
+    index: int = 0                    
+    showing_answer: bool = False    
+    started_at: str = ""              
+    seed: int = 0                     
+
+    stats: Dict[str, str] = field(default_factory=dict)
+    per_item_sec: Dict[str, int] = field(default_factory=dict)
+    total_sec: int = 0
+    last_ts: float = 0.0                   
 
     @property
     def total(self) -> int:
@@ -48,6 +52,8 @@ class GameSession:
         if not raw:
             return None
         order = list(map(int, raw.get("order", [])))
+        stats = {str(k): str(v) for k, v in (raw.get("stats") or {}).items()}
+        per_item_sec = {str(k): int(v) for k, v in (raw.get("per_item_sec") or {}).items()}
         return GameSession(
             user_id=int(raw.get("user_id", user_id)),
             collection_id=int(raw["collection_id"]),
@@ -56,6 +62,10 @@ class GameSession:
             showing_answer=bool(raw.get("showing_answer", False)),
             started_at=str(raw.get("started_at") or ""),
             seed=int(raw.get("seed", 0)),
+            stats=stats,
+            per_item_sec=per_item_sec,
+            total_sec=int(raw.get("total_sec", 0)),
+            last_ts=float(raw.get("last_ts", 0.0)),
         )
 
     async def save(self, redis_kv: RedisKV, ttl: int | None = None) -> None:
@@ -67,6 +77,10 @@ class GameSession:
             "showing_answer": self.showing_answer,
             "started_at": self.started_at,
             "seed": self.seed,
+            "stats": self.stats,
+            "per_item_sec": self.per_item_sec,
+            "total_sec": self.total_sec,
+            "last_ts": self.last_ts,
         }
         await redis_kv.set_json(self._key(redis_kv, self.user_id), payload, ex=ttl)
 
@@ -96,6 +110,8 @@ class GameSession:
         else:
             rng.shuffle(order)
 
+        now = time.time()
+
         sess = GameSession(
             user_id=user_id,
             collection_id=collection_id,
@@ -104,6 +120,10 @@ class GameSession:
             showing_answer=False,
             started_at=datetime.utcnow().isoformat(timespec="seconds") + "Z",
             seed=seed,
+            stats={},
+            per_item_sec={},
+            total_sec=0,
+            last_ts=now,
         )
         await sess.save(redis_kv, ttl=ttl)
         return sess
@@ -116,10 +136,41 @@ class GameSession:
     def to_progress_str(self) -> str:
         return f"{min(self.index, self.total)}/{self.total}"
 
-    def advance(self) -> None:
-        if not self.done:
-            self.index += 1
-            self.showing_answer = False
+    def _commit_time_for_current(self) -> None:
+        if self.done:
+            return
+        now = time.time()
+        delta = max(0, int(now - (self.last_ts or now)))
+        item_id = self.order[self.index]
+        key = str(item_id)
+        self.per_item_sec[key] = int(self.per_item_sec.get(key, 0)) + delta
+        self.total_sec += delta
+        self.last_ts = now
+
+    def mark_and_next(self, mark: Optional[str]) -> None:
+        """
+        mark in: 'known' | 'unknown' | 'skipped' | None  (None -> 'neutral')
+        """
+        if self.done:
+            return
+        self._commit_time_for_current()
+        if mark is None:
+            mark = "neutral"
+        self.stats[str(self.order[self.index])] = mark
+        # move forward
+        self.index += 1
+        self.showing_answer = False
+        self.last_ts = time.time()
+
+    def counts(self) -> Dict[str, int]:
+        counts = {"known": 0, "unknown": 0, "skipped": 0, "neutral": 0}
+        for v in self.stats.values():
+            if v in counts:
+                counts[v] += 1
+        return counts
+
+    def wrong_ids(self) -> List[int]:
+        return [int(k) for k, v in self.stats.items() if v == "unknown"]
 
 
 class GameData:
@@ -134,9 +185,7 @@ class GameData:
     async def list_user_collections(self, user_owner_id: int) -> list[Collection]:
         async with self._session() as session:
             res = await session.execute(
-                select(Collection)
-                .where(Collection.owner_id == user_owner_id)
-                .order_by(Collection.created_at)
+                select(Collection).where(Collection.owner_id == user_owner_id).order_by(Collection.created_at)
             )
             return [row[0] for row in res.all()]
 
@@ -160,9 +209,8 @@ class GameData:
     async def get_item_qa(self, item_id: int) -> Optional[Tuple[str, str]]:
         async with self._session() as session:
             res = await session.execute(
-                select(CollectionItem.question, CollectionItem.answer).where(
-                    CollectionItem.id == item_id
-                )
+                select(CollectionItem.question, CollectionItem.answer)
+                .where(CollectionItem.id == item_id)
             )
             row = res.first()
             return None if not row else (row[0], row[1])
@@ -176,3 +224,17 @@ class GameData:
             )
             row = res.first()
             return None if not row else (row[0] or "Без названия")
+
+    async def get_items_bulk(self, item_ids: Iterable[int]) -> Dict[int, Tuple[str, str]]:
+        ids = list(set(map(int, item_ids)))
+        if not ids:
+            return {}
+        async with self._session() as session:
+            res = await session.execute(
+                select(CollectionItem.id, CollectionItem.question, CollectionItem.answer)
+                .where(CollectionItem.id.in_(ids))
+            )
+            out: Dict[int, Tuple[str, str]] = {}
+            for row in res.all():
+                out[int(row[0])] = (row[1], row[2])
+            return out
