@@ -2,11 +2,10 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = "0fb7996f0e93"
-down_revision = "ef0b4f66c587"
+revision = "ef0b4f66c587"
+down_revision = "0fb7996f0e93"
 branch_labels = None
 depends_on = None
-
 
 def upgrade() -> None:
     op.create_table(
@@ -39,7 +38,10 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_index("ix_collections_owner_id", "collections", ["owner_id"])
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_collections_owner_id "
+        "ON collections (owner_id)"
+    )
 
     op.create_table(
         "collection_items",
@@ -73,8 +75,9 @@ def upgrade() -> None:
     op.create_unique_constraint(
         "uq_collection_item_question", "collection_items", ["collection_id", "question"]
     )
-    op.create_index(
-        "ix_collection_items_collection_id", "collection_items", ["collection_id"]
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_collection_items_collection_id "
+        "ON collection_items (collection_id)"
     )
 
     op.execute(

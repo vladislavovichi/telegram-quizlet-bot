@@ -3,142 +3,194 @@ from __future__ import annotations
 import importlib
 import inspect
 import logging
-from typing import Any, Dict, Optional
+import pkgutil
+from dataclasses import dataclass
+from types import ModuleType
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from aiogram import Router
 
 log = logging.getLogger(__name__)
-__all__ = ["register_handlers"]
+
+_HANDLERS_PKG = __name__ 
+_PRIVATE_PREFIXES = ("_",)
+_FACTORY_PREFIX = "get_"
+_FACTORY_SUFFIX = "_router"
 
 
-def _try_import(name: str):
-    try:
-        module = importlib.import_module(f".{name}", package=__name__)
-        log.info("Imported handlers.%s (relative)", name)
-        return module
-    except Exception as e_rel:
-        log.debug("Relative import handlers.%s failed: %s", name, e_rel)
-
-    try:
-        module = importlib.import_module(f"app.handlers.{name}")
-        log.info("Imported handlers.%s (absolute)", name)
-        return module
-    except Exception as e_abs:
-        log.exception("Failed to import handlers.%s: %s", name, e_abs)
-        return None
+@dataclass(frozen=True)
+class _RouterRef:
+    source: str
+    name: str
+    router: Router
 
 
-_user_mod = _try_import("user")
-
-
-def _filter_kwargs_for_callable(
-    callable_obj: Any, deps: Dict[str, Any]
-) -> Dict[str, Any]:
-    try:
-        sig = inspect.signature(callable_obj)
-    except (ValueError, TypeError):
-        return {}
-    names = [
-        n
-        for n, p in sig.parameters.items()
-        if p.kind
-        in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
-    ]
-    return {k: v for k, v in deps.items() if k in names}
-
-
-def _resolve_router(obj: Any, deps: Dict[str, Any]) -> Router:
-    if isinstance(obj, Router):
-        return obj
-
-    if isinstance(obj, type) and issubclass(obj, Router):
-        return obj()
-
-    if callable(obj):
-        kw = _filter_kwargs_for_callable(obj, deps)
-        try:
-            r = obj(**kw)
-            if isinstance(r, Router):
-                return r
-            raise TypeError(f"Router factory returned non-Router: {r!r}")
-        except TypeError as e_kw:
-            log.debug("Keyword call failed for %r with %r: %s", obj, kw, e_kw)
-
-        try:
-            sig = inspect.signature(obj)
-            args = []
-            missing = []
-            for name, param in sig.parameters.items():
-                if param.kind in (
-                    inspect.Parameter.POSITIONAL_ONLY,
-                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                ):
-                    if name in deps:
-                        args.append(deps[name])
-                    elif param.default is inspect._empty:
-                        missing.append(name)
-            if missing:
-                raise TypeError(f"Missing required positional deps: {missing}")
-            r = obj(*args)
-            if isinstance(r, Router):
-                return r
-            raise TypeError(f"Router factory returned non-Router (positional): {r!r}")
-        except TypeError as e_pos:
-            raise TypeError(
-                f"Callable router factory is not compatible: {e_pos}"
-            ) from e_pos
-
-    raise TypeError(
-        f"router should be Router or a factory returning Router, got {obj!r}"
-    )
-
-
-def register_handlers(
-    dp: Router,
-    async_session_maker,
-    redis=None,
-    admin_ids: Optional[list] = None,
-    engine=None,
-):
-    if admin_ids is None:
-        admin_ids = []
-
-    deps: Dict[str, Any] = {
-        "async_session_maker": async_session_maker,
-        "redis": redis,
-        "admin_ids": admin_ids,
-        "engine": engine,
-    }
-
-    modules = [
-        (_user_mod, ("get_user_router", "router", "UserRouter")),
-    ]
-
-    for module, names in modules:
-        if module is None:
+def _iter_modules(package: str) -> Iterable[Tuple[str, ModuleType]]:
+    pkg = importlib.import_module(package)
+    if not hasattr(pkg, "__path__"):
+        return []
+    for modinfo in pkgutil.iter_modules(pkg.__path__, package + "."):
+        mod_name = modinfo.name
+        # пропускаем приватные
+        if mod_name.rsplit(".", 1)[-1].startswith(_PRIVATE_PREFIXES):
             continue
-        resolved = False
-        for name in names:
-            if hasattr(module, name):
-                candidate = getattr(module, name)
-                try:
-                    router = _resolve_router(candidate, deps)
-                    dp.include_router(router)
-                    log.info(
-                        "Included router from %s: attribute=%s", module.__name__, name
+        try:
+            mod = importlib.import_module(mod_name)
+        except Exception as e:
+            log.exception("handlers: skip module import error: %s (%s)", mod_name, e)
+            continue
+        yield mod_name, mod
+
+
+def _module_priority(mod: ModuleType) -> int:
+    p = getattr(mod, "PRIORITY", None)
+    if isinstance(p, int):
+        return p
+    return 0
+
+
+def _sorted_modules(package: str) -> List[Tuple[str, ModuleType]]:
+    mods = list(_iter_modules(package))
+    mods.sort(key=lambda t: (_module_priority(t[1]), t[0]))
+    return mods
+
+
+def _available_deps(dp: Router, extra_deps: Dict[str, Any]) -> Dict[str, Any]:
+    deps: Dict[str, Any] = {}
+    if hasattr(dp, "workflow_data"):
+        deps.update(dict(dp.workflow_data))
+    deps.update(extra_deps or {})
+    return deps
+
+
+def _resolve_factory_call(
+    func: Callable[..., Any], deps: Dict[str, Any]
+) -> Dict[str, Any]:
+    sig = inspect.signature(func)
+    call_kwargs: Dict[str, Any] = {}
+    missing: List[str] = []
+
+    for name, param in sig.parameters.items():
+        if name in deps:
+            call_kwargs[name] = deps[name]
+        elif param.default is inspect._empty and param.kind in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        ):
+            missing.append(name)
+
+    if missing:
+        raise TypeError(
+            f"Factory {func.__module__}.{func.__name__} requires missing deps: {', '.join(missing)}"
+        )
+    return call_kwargs
+
+
+def _collect_module_routers(
+    mod: ModuleType, dp: Router, deps: Dict[str, Any]
+) -> Tuple[List[_RouterRef], Optional[Callable[..., Any]]]:
+    refs: List[_RouterRef] = []
+
+    r = getattr(mod, "router", None)
+    if isinstance(r, Router):
+        refs.append(_RouterRef(source=mod.__name__, name="router", router=r))
+
+    factories: List[Tuple[int, str, Callable[..., Any]]] = []
+    for attr_name, obj in vars(mod).items():
+        if not callable(obj):
+            continue
+        if not attr_name.startswith(_FACTORY_PREFIX) or not attr_name.endswith(
+            _FACTORY_SUFFIX
+        ):
+            continue
+        priority = getattr(obj, "priority", 0)
+        factories.append((priority, attr_name, obj))
+
+    factories.sort(key=lambda t: (t[0], t[1]))
+
+    for _, fname, factory in factories:
+        try:
+            call_kwargs = _resolve_factory_call(factory, deps)
+            res = factory(**call_kwargs)
+            if not isinstance(res, Router):
+                if inspect.isawaitable(res):
+                    res = dp.loop.run_until_complete(
+                        res
                     )
-                    resolved = True
-                    break
-                except Exception as e:
-                    log.exception(
-                        "Failed to include router from %s.%s: %s",
-                        module.__name__,
-                        name,
-                        e,
-                    )
-        if not resolved:
-            log.warning(
-                "No usable router found in module %s (checked %s)",
-                module.__name__,
-                names,
+            if not isinstance(res, Router):
+                raise TypeError(f"{mod.__name__}.{fname} did not return aiogram.Router")
+            refs.append(_RouterRef(source=mod.__name__, name=fname, router=res))
+        except Exception as e:
+            log.exception("handlers: skip factory %s.%s: %s", mod.__name__, fname, e)
+            continue
+
+    setup = getattr(mod, "setup", None)
+    if callable(setup):
+
+        def _setup_wrapper() -> None:
+            try:
+                kwargs = {
+                    k: v
+                    for k, v in deps.items()
+                    if k in inspect.signature(setup).parameters
+                }
+                setup(dp, **kwargs)
+            except Exception as e:
+                log.exception("handlers: setup failed in %s: %s", mod.__name__, e)
+
+        return refs, _setup_wrapper
+
+    return refs, None
+
+
+def _dedupe(routers: List[_RouterRef]) -> List[_RouterRef]:
+    seen_keys: Set[Tuple[str, str]] = set()
+    seen_ids: Set[int] = set()
+    result: List[_RouterRef] = []
+    for ref in routers:
+        key = (ref.source, ref.name)
+        if key in seen_keys:
+            continue
+        if id(ref.router) in seen_ids:
+            continue
+        seen_keys.add(key)
+        seen_ids.add(id(ref.router))
+        result.append(ref)
+    return result
+
+
+def register_handlers(dp: Router, **deps: Any) -> None:
+    all_deps = _available_deps(dp, deps)
+    all_refs: List[_RouterRef] = []
+    setups: List[Callable[[], None]] = []
+
+    for mod_name, mod in _sorted_modules(_HANDLERS_PKG):
+        try:
+            refs, setup = _collect_module_routers(mod, dp, all_deps)
+            if refs:
+                log.debug(
+                    "handlers: collected %d router(s) from %s", len(refs), mod_name
+                )
+                all_refs.extend(refs)
+            if setup:
+                setups.append(setup)
+        except Exception as e:
+            log.exception("handlers: module processing error: %s (%s)", mod_name, e)
+            continue
+
+    all_refs = _dedupe(all_refs)
+
+    for ref in all_refs:
+        try:
+            dp.include_router(ref.router)
+            log.info("handlers: included %s (%s)", ref.name, ref.source)
+        except Exception as e:
+            log.exception(
+                "handlers: include failed for %s.%s: %s", ref.source, ref.name, e
             )
+
+    for s in setups:
+        s()
+
+    log.info("handlers: total routers included: %d", len(all_refs))

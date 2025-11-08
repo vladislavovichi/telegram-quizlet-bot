@@ -9,6 +9,7 @@ async def main():
     app = await create_app()
     bot = app.bot
     dp = app.dp
+    redis = app.redis_client
 
     print("Starting polling...")
     try:
@@ -16,12 +17,16 @@ async def main():
     finally:
         try:
             await bot.session.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print("Bot close failed: %s", e)
         try:
             await app.engine.dispose()
-        except Exception:
-            pass
+        except Exception as e:
+            print("Engine close failed: %s", e)
+        try:
+            await redis.aclose()
+        except Exception as e:
+            print("Redis close failed: %s", e)
         print("Shutdown complete.")
 
 
