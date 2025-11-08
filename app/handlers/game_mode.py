@@ -137,7 +137,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         gd = GameData(async_session_maker)
         item_ids = await gd.get_item_ids(sess.collection_id)
 
-        # создаем новый порядок, стараясь отличаться от предыдущего
         sess = await GameSession.start_new(
             redis_kv,
             cb.from_user.id,
