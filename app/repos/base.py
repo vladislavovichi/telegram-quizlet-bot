@@ -3,10 +3,6 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repos.collections import CollectionsRepo
-from app.repos.items import ItemsRepo
-from app.repos.users import UsersRepo
-
 
 class Repo:
     def __init__(self, session: AsyncSession) -> None:
@@ -16,7 +12,7 @@ class Repo:
 @asynccontextmanager
 async def with_repos(
     async_session_maker,
-) -> AsyncIterator[tuple[AsyncSession, "UsersRepo", "CollectionsRepo", "ItemsRepo"]]:
+) -> AsyncIterator[tuple[AsyncSession, "UsersRepo", "CollectionsRepo", "ItemsRepo"]]:  # type: ignore
     from .users import UsersRepo
     from .collections import CollectionsRepo
     from .items import ItemsRepo
