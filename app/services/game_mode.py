@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Dict, Iterable
 from datetime import datetime
 from contextlib import asynccontextmanager
-import secrets, time
+import secrets
+import time
 
 from sqlalchemy import select
 
@@ -12,20 +13,21 @@ from app.services.redis_kv import RedisKV
 from app.services.db import get_session
 from app.models.collection import Collection, CollectionItem
 
+
 @dataclass(slots=True)
 class GameSession:
     user_id: int
     collection_id: int
-    order: List[int]             
-    index: int = 0                    
-    showing_answer: bool = False    
-    started_at: str = ""              
-    seed: int = 0                     
+    order: List[int]
+    index: int = 0
+    showing_answer: bool = False
+    started_at: str = ""
+    seed: int = 0
 
     stats: Dict[str, str] = field(default_factory=dict)
     per_item_sec: Dict[str, int] = field(default_factory=dict)
     total_sec: int = 0
-    last_ts: float = 0.0                   
+    last_ts: float = 0.0
 
     @property
     def total(self) -> int:
@@ -53,7 +55,9 @@ class GameSession:
             return None
         order = list(map(int, raw.get("order", [])))
         stats = {str(k): str(v) for k, v in (raw.get("stats") or {}).items()}
-        per_item_sec = {str(k): int(v) for k, v in (raw.get("per_item_sec") or {}).items()}
+        per_item_sec = {
+            str(k): int(v) for k, v in (raw.get("per_item_sec") or {}).items()
+        }
         return GameSession(
             user_id=int(raw.get("user_id", user_id)),
             collection_id=int(raw["collection_id"]),
@@ -185,7 +189,9 @@ class GameData:
     async def list_user_collections(self, user_owner_id: int) -> list[Collection]:
         async with self._session() as session:
             res = await session.execute(
-                select(Collection).where(Collection.owner_id == user_owner_id).order_by(Collection.created_at)
+                select(Collection)
+                .where(Collection.owner_id == user_owner_id)
+                .order_by(Collection.created_at)
             )
             return [row[0] for row in res.all()]
 
@@ -209,8 +215,9 @@ class GameData:
     async def get_item_qa(self, item_id: int) -> Optional[Tuple[str, str]]:
         async with self._session() as session:
             res = await session.execute(
-                select(CollectionItem.question, CollectionItem.answer)
-                .where(CollectionItem.id == item_id)
+                select(CollectionItem.question, CollectionItem.answer).where(
+                    CollectionItem.id == item_id
+                )
             )
             row = res.first()
             return None if not row else (row[0], row[1])
@@ -225,14 +232,17 @@ class GameData:
             row = res.first()
             return None if not row else (row[0] or "Без названия")
 
-    async def get_items_bulk(self, item_ids: Iterable[int]) -> Dict[int, Tuple[str, str]]:
+    async def get_items_bulk(
+        self, item_ids: Iterable[int]
+    ) -> Dict[int, Tuple[str, str]]:
         ids = list(set(map(int, item_ids)))
         if not ids:
             return {}
         async with self._session() as session:
             res = await session.execute(
-                select(CollectionItem.id, CollectionItem.question, CollectionItem.answer)
-                .where(CollectionItem.id.in_(ids))
+                select(
+                    CollectionItem.id, CollectionItem.question, CollectionItem.answer
+                ).where(CollectionItem.id.in_(ids))
             )
             out: Dict[int, Tuple[str, str]] = {}
             for row in res.all():

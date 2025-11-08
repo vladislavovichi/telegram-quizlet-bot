@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import logging, io, csv
+import logging
+import io
+import csv
 from aiogram import Router, F, types
-from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
 
 from app.keyboards.game_mode import (
@@ -17,7 +18,7 @@ from app.texts.game_mode import (
     fmt_choose_collection,
 )
 from app.services.game_mode import GameSession, GameData
-from app.repos.base import with_repos 
+from app.repos.base import with_repos
 
 log = logging.getLogger(__name__)
 
@@ -28,18 +29,23 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
     @router.message(F.text == "🎮 Играть одному")
     async def cmd_game(message: types.Message) -> None:
         async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(message.from_user.id, message.from_user.username)
+            u = await users.get_or_create(
+                message.from_user.id, message.from_user.username
+            )
             all_cols = await cols.list_by_user(u.id)
-        await message.answer(fmt_choose_collection(), reply_markup=game_collections_kb(all_cols, page=0))
+        await message.answer(
+            fmt_choose_collection(), reply_markup=game_collections_kb(all_cols, page=0)
+        )
 
     @router.callback_query(F.data == "game:choose")
     async def cb_game_choose(cb: types.CallbackQuery) -> None:
         async with with_repos(async_session_maker) as (_, users, cols, _):
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
             all_cols = await cols.list_by_user(u.id)
-        await cb.message.edit_text(fmt_choose_collection(), reply_markup=game_collections_kb(all_cols, page=0))
+        await cb.message.edit_text(
+            fmt_choose_collection(), reply_markup=game_collections_kb(all_cols, page=0)
+        )
         await cb.answer()
-
 
     @router.callback_query(F.data.startswith("game:page:"))
     async def cb_game_page(cb: types.CallbackQuery) -> None:
@@ -50,9 +56,11 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         async with with_repos(async_session_maker) as (_, users, cols, _):
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
             all_cols = await cols.list_by_user(u.id)
-        await cb.message.edit_text(fmt_choose_collection(), reply_markup=game_collections_kb(all_cols, page=page))
+        await cb.message.edit_text(
+            fmt_choose_collection(),
+            reply_markup=game_collections_kb(all_cols, page=page),
+        )
         await cb.answer()
-
 
     @router.callback_query(F.data.startswith("game:begin:"))
     async def cb_game_begin(cb: types.CallbackQuery) -> None:
@@ -74,12 +82,11 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             cb.from_user.id,
             collection_id,
             item_ids,
-            ttl=getattr(redis_kv, 'ttl_seconds', None),
+            ttl=getattr(redis_kv, "ttl_seconds", None),
         )
 
         await render_current_question(cb.message, sess)
         await cb.answer()
-
 
     @router.callback_query(F.data == "game:show")
     async def cb_game_show(cb: types.CallbackQuery) -> None:
@@ -89,10 +96,9 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             return
 
         sess.showing_answer = True
-        await sess.save(redis_kv, ttl=getattr(redis_kv, 'ttl_seconds', None))
+        await sess.save(redis_kv, ttl=getattr(redis_kv, "ttl_seconds", None))
         await render_current_question(cb.message, sess)
         await cb.answer()
-
 
     @router.callback_query(F.data == "game:hide")
     async def cb_game_hide(cb: types.CallbackQuery) -> None:
@@ -102,30 +108,25 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             return
 
         sess.showing_answer = False
-        await sess.save(redis_kv, ttl=getattr(redis_kv, 'ttl_seconds', None))
+        await sess.save(redis_kv, ttl=getattr(redis_kv, "ttl_seconds", None))
         await render_current_question(cb.message, sess)
         await cb.answer()
-        
 
     @router.callback_query(F.data == "game:known")
     async def cb_game_known(cb: types.CallbackQuery) -> None:
         await _mark_and_go(cb, "known")
 
-
     @router.callback_query(F.data == "game:unknown")
     async def cb_game_unknown(cb: types.CallbackQuery) -> None:
         await _mark_and_go(cb, "unknown")
-
 
     @router.callback_query(F.data == "game:skip")
     async def cb_game_skip(cb: types.CallbackQuery) -> None:
         await _mark_and_go(cb, "skipped")
 
-
     @router.callback_query(F.data == "game:next")
     async def cb_game_next(cb: types.CallbackQuery) -> None:
         await _mark_and_go(cb, None)
-
 
     async def _mark_and_go(cb: types.CallbackQuery, mark: str | None) -> None:
         sess = await GameSession.load(redis_kv, cb.from_user.id)
@@ -133,9 +134,9 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             await cb.answer("Сессия не найдена. Начни игру заново.", show_alert=True)
             return
 
-        was_last = (sess.index + 1 >= sess.total)
+        was_last = sess.index + 1 >= sess.total
         sess.mark_and_next(mark)
-        await sess.save(redis_kv, ttl=getattr(redis_kv, 'ttl_seconds', None))
+        await sess.save(redis_kv, ttl=getattr(redis_kv, "ttl_seconds", None))
 
         if sess.done:
             await render_finished(cb.message, sess)
@@ -143,7 +144,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             await render_current_question(cb.message, sess)
 
         await cb.answer("Готово" if not was_last else "Финиш!")
-
 
     @router.callback_query(F.data == "game:repeat:all")
     async def cb_game_repeat_all(cb: types.CallbackQuery) -> None:
@@ -160,12 +160,11 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             cb.from_user.id,
             sess.collection_id,
             item_ids,
-            ttl=getattr(redis_kv, 'ttl_seconds', None),
+            ttl=getattr(redis_kv, "ttl_seconds", None),
             avoid_order=sess.order,
         )
         await render_current_question(cb.message, new_sess)
         await cb.answer("Новая игра (всё)!")
-
 
     @router.callback_query(F.data == "game:repeat:wrong")
     async def cb_game_repeat_wrong(cb: types.CallbackQuery) -> None:
@@ -184,11 +183,10 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             cb.from_user.id,
             sess.collection_id,
             wrong,
-            ttl=getattr(redis_kv, 'ttl_seconds', None),
+            ttl=getattr(redis_kv, "ttl_seconds", None),
         )
         await render_current_question(cb.message, new_sess)
         await cb.answer("Новая игра (только ошибочные)!")
-
 
     @router.callback_query(F.data == "game:export")
     async def cb_game_export(cb: types.CallbackQuery) -> None:
@@ -228,8 +226,12 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
 
         if not qa or title is None:
             from app.keyboards.game_mode import game_finished_kb
+
             counts = sess.counts()
-            await msg.edit_text("Ошибка: карточка не найдена.", reply_markup=game_finished_kb(has_wrong=counts.get("unknown", 0) > 0))
+            await msg.edit_text(
+                "Ошибка: карточка не найдена.",
+                reply_markup=game_finished_kb(has_wrong=counts.get("unknown", 0) > 0),
+            )
             return
 
         q, a = qa
@@ -239,15 +241,18 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         else:
             text = fmt_question(title, q, progress)
 
-        await msg.edit_text(text, reply_markup=game_controls_kb(showing_answer=sess.showing_answer))
-
+        await msg.edit_text(
+            text, reply_markup=game_controls_kb(showing_answer=sess.showing_answer)
+        )
 
     async def render_finished(msg: types.Message, sess: GameSession) -> None:
         gd = GameData(async_session_maker)
         title = await gd.get_collection_title_by_id(sess.collection_id) or "Коллекция"
         counts = sess.counts()
         text = fmt_finished_summary(title, sess.total, counts, sess.total_sec)
-        from app.keyboards.game_mode import game_finished_kb
-        await msg.edit_text(text, reply_markup=game_finished_kb(has_wrong=counts.get("unknown", 0) > 0))
-    
+
+        await msg.edit_text(
+            text, reply_markup=game_finished_kb(has_wrong=counts.get("unknown", 0) > 0)
+        )
+
     return router

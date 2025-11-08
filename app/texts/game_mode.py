@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 def fmt_question(title: str, q: str, progress: str) -> str:
     return (
         f"🧩 <b>{escape(title)}</b>\n\n"
@@ -18,7 +19,9 @@ def fmt_answer(title: str, q: str, a: str, progress: str) -> str:
 
 
 def fmt_finished_summary(title: str, total: int, counts: dict, total_sec: int) -> str:
-    acc = accuracy(counts.get("known", 0), counts.get("known", 0) + counts.get("unknown", 0))
+    acc = accuracy(
+        counts.get("known", 0), counts.get("known", 0) + counts.get("unknown", 0)
+    )
     dur = human_duration(total_sec)
     return (
         f"✔️ Все карточки в «{escape(title)}» просмотрены!\n\n"
@@ -38,11 +41,7 @@ def fmt_choose_collection() -> str:
 
 
 def escape(text: str) -> str:
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def human_duration(total_sec: int) -> str:
