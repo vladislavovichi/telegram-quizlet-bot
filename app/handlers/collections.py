@@ -63,7 +63,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.answer()
 
-    @router.callback_query(F.data.startswith("col:list:"))
+    @router.callback_query(F.data.startswith("col:page:"))
     async def page_collections(cb: types.CallbackQuery) -> None:
         page = int(cb.data.split(":")[-1])
         async with with_repos(async_session_maker) as (_, users, cols, _):
