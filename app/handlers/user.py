@@ -33,6 +33,5 @@ def get_user_router(async_session_maker) -> Router:
         )
         await message.answer(text, reply_markup=main_reply_kb)
 
-    # приоритет задаём роутеру
     router.priority = -100
     return router

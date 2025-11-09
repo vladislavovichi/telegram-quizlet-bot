@@ -26,6 +26,7 @@ class GameSession:
 
     stats: Dict[str, str] = field(default_factory=dict)
     per_item_sec: Dict[str, int] = field(default_factory=dict)
+    hints: Dict[str, list[str]] = field(default_factory=dict)
     total_sec: int = 0
     last_ts: float = 0.0
 
@@ -68,6 +69,7 @@ class GameSession:
             seed=int(raw.get("seed", 0)),
             stats=stats,
             per_item_sec=per_item_sec,
+            hints={str(k): list(v) for k, v in (raw.get("hints") or {}).items()},
             total_sec=int(raw.get("total_sec", 0)),
             last_ts=float(raw.get("last_ts", 0.0)),
         )
@@ -83,6 +85,7 @@ class GameSession:
             "seed": self.seed,
             "stats": self.stats,
             "per_item_sec": self.per_item_sec,
+            "hints": self.hints,
             "total_sec": self.total_sec,
             "last_ts": self.last_ts,
         }
@@ -152,16 +155,13 @@ class GameSession:
         self.last_ts = now
 
     def mark_and_next(self, mark: Optional[str]) -> None:
-        """
-        mark in: 'known' | 'unknown' | 'skipped' | None  (None -> 'neutral')
-        """
         if self.done:
             return
         self._commit_time_for_current()
         if mark is None:
             mark = "neutral"
         self.stats[str(self.order[self.index])] = mark
-        # move forward
+
         self.index += 1
         self.showing_answer = False
         self.last_ts = time.time()

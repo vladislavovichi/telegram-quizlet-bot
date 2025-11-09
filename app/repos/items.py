@@ -96,3 +96,14 @@ class ItemsRepo:
             delete(CollectionItem).where(CollectionItem.id == item_id)
         )
         await self.session.commit()
+
+    async def delete_all_in_collection(self, collection_id: int) -> int:
+        res = await self.session.execute(
+            delete(CollectionItem).where(CollectionItem.collection_id == collection_id)
+        )
+        await self.session.commit()
+
+        try:
+            return int(res.rowcount or 0)
+        except Exception:
+            return 0

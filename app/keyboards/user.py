@@ -8,7 +8,7 @@ main_reply_kb = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text="👤 Мой профиль"),
-            KeyboardButton(text="Подключиться по коду"),
+            KeyboardButton(text="🤼 Играть онлайн"),
         ],
     ],
     resize_keyboard=True,
