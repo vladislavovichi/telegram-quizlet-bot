@@ -125,10 +125,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
     async def cb_game_skip(cb: types.CallbackQuery) -> None:
         await _mark_and_go(cb, "skipped")
 
-    @router.callback_query(F.data == "game:next")
-    async def cb_game_next(cb: types.CallbackQuery) -> None:
-        await _mark_and_go(cb, None)
-
     async def _mark_and_go(cb: types.CallbackQuery, mark: str | None) -> None:
         sess = await GameSession.load(redis_kv, cb.from_user.id)
         if not sess:

@@ -50,7 +50,6 @@ def game_controls_kb(
     b.button(text="✅ Знаю", callback_data="game:known")
     b.button(text="❌ Не знаю", callback_data="game:unknown")
     b.button(text="⏭ Пропустить", callback_data="game:skip")
-    b.button(text="➡️ Дальше", callback_data="game:next")
 
     b.adjust(1)
     return b.as_markup()

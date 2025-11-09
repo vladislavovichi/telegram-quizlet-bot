@@ -54,7 +54,6 @@ def fmt_finished_summary(title: str, total: int, counts: dict, total_sec: int) -
         f"• Знал: <b>{counts.get('known', 0)}</b>\n"
         f"• Не знал: <b>{counts.get('unknown', 0)}</b>\n"
         f"• Пропущено: <b>{counts.get('skipped', 0)}</b>\n"
-        f"• Без оценки: <b>{counts.get('neutral', 0)}</b>\n"
         f"• Точность: <b>{acc}%</b>\n"
         f"• Время: <b>{dur}</b>"
     )
