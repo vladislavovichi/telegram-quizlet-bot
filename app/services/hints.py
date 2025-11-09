@@ -9,7 +9,7 @@ _func: Callable[..., str] | None = None
 try:
     import importlib
 
-    mdl = importlib.import_module("model")
+    mdl = importlib.import_module("neuralnet")
     for name in ("generate_hint", "make_hint", "infer", "generate"):
         f = getattr(mdl, name, None)
         if callable(f):
