@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Sequence
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 PAGE_SIZE_COLLECTIONS = 4
@@ -19,7 +19,6 @@ def game_collections_kb(collections: Sequence, page: int = 0) -> InlineKeyboardM
             continue
         b.button(text=f"🧩 {title[:60]}", callback_data=f"game:begin:{cid}")
 
-    # пагинация
     total = len(collections)
     pages = (total + PAGE_SIZE_COLLECTIONS - 1) // PAGE_SIZE_COLLECTIONS
     if pages > 1:
@@ -35,7 +34,9 @@ def game_collections_kb(collections: Sequence, page: int = 0) -> InlineKeyboardM
     return b.as_markup()
 
 
-def game_controls_kb(*, showing_answer: bool, hints_used: int = 0) -> InlineKeyboardMarkup:
+def game_controls_kb(
+    *, showing_answer: bool, hints_used: int = 0
+) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
 
     if showing_answer:
@@ -43,11 +44,9 @@ def game_controls_kb(*, showing_answer: bool, hints_used: int = 0) -> InlineKeyb
     else:
         b.button(text="👁 Показать ответ", callback_data="game:show")
 
-    # Подсказки — максимум 3
     if hints_used < 3:
         b.button(text=f"💡 Подсказка ({hints_used}/3)", callback_data="game:hint")
 
-    # Оценка/навигация
     b.button(text="✅ Знаю", callback_data="game:known")
     b.button(text="❌ Не знаю", callback_data="game:unknown")
     b.button(text="⏭ Пропустить", callback_data="game:skip")

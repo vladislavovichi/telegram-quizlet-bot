@@ -47,7 +47,8 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             all_cols = await cols.list_by_user(u.id)
         pairs = [(c.id, c.title) for c in all_cols]
         await message.answer(
-            "Твои коллекции:", reply_markup=collections_root_kb(page=1, collections=pairs)
+            "Твои коллекции:",
+            reply_markup=collections_root_kb(page=1, collections=pairs),
         )
 
     @router.callback_query(F.data == "col:list")
@@ -57,7 +58,8 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             all_cols = await cols.list_by_user(u.id)
         pairs = [(c.id, c.title) for c in all_cols]
         await cb.message.edit_text(
-            "Твои коллекции:", reply_markup=collections_root_kb(page=1, collections=pairs)
+            "Твои коллекции:",
+            reply_markup=collections_root_kb(page=1, collections=pairs),
         )
         await cb.answer()
 
@@ -486,13 +488,15 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     return
 
                 async with with_repos(async_session_maker) as (_, users, cols, items):
-                    u = await users.get_or_create(message.from_user.id, message.from_user.username)
+                    u = await users.get_or_create(
+                        message.from_user.id, message.from_user.username
+                    )
                     col = await cols.get_owned(cid, u.id)
                     if not col:
                         await message.answer("Коллекция не найдена.")
                         await redis_kv.delete(key)
                         return
-                    
+
                     existing = set(q for _, q in await items.list_pairs(cid))
                     added = 0
                     for q, a in pairs:
@@ -505,11 +509,16 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                         existing.add(q)
                 await redis_kv.delete(key)
                 if added == 0:
-                    await message.answer("Ничего не импортировано (возможно, дубликаты или лимит достигнут).")
+                    await message.answer(
+                        "Ничего не импортировано (возможно, дубликаты или лимит достигнут)."
+                    )
                 else:
                     await message.answer(f"✅ Импортировано карточек: {added}")
-                
-                await message.answer(f"Коллекция обновлена.", reply_markup=collection_menu_kb(cid, page=2))
+
+                await message.answer(
+                    "Коллекция обновлена.",
+                    reply_markup=collection_menu_kb(cid, page=2),
+                )
                 return
 
             if typ == "import:collections:await_file":
@@ -530,7 +539,9 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                 total_cards = 0
                 skipped = 0
                 async with with_repos(async_session_maker) as (_, users, cols, items):
-                    u = await users.get_or_create(message.from_user.id, message.from_user.username)
+                    u = await users.get_or_create(
+                        message.from_user.id, message.from_user.username
+                    )
                     for title, pairs in grouped.items():
                         col = await cols.create(u.id, title)
                         created += 1
@@ -565,40 +576,54 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     return
                 cid, owner_id = parsed
                 async with with_repos(async_session_maker) as (_, users, cols, items):
-                    u = await users.get_or_create(message.from_user.id, message.from_user.username)
+                    u = await users.get_or_create(
+                        message.from_user.id, message.from_user.username
+                    )
 
                     src = await cols.get_by_id(cid)
                     if not src:
                         await message.answer("Исходная коллекция не найдена.")
                         await redis_kv.delete(key)
                         return
-                    
+
                     new_col = await cols.create(u.id, src.title)
                     pairs = await items.list_pairs(cid)
                     for _, q in pairs:
                         pass
-                
+
                 from sqlalchemy import select
                 from app.models.collection import CollectionItem
-                async with with_repos(async_session_maker) as (session, users, cols, items):
+
+                async with with_repos(async_session_maker) as (
+                    session,
+                    users,
+                    cols,
+                    items,
+                ):
                     pairs_rows = await session.execute(
                         select(CollectionItem.question, CollectionItem.answer)
                         .where(CollectionItem.collection_id == cid)
-                        .order_by(CollectionItem.position.asc(), CollectionItem.id.asc())
+                        .order_by(
+                            CollectionItem.position.asc(), CollectionItem.id.asc()
+                        )
                     )
                     for q, a in pairs_rows.all():
                         await items.add(new_col.id, q, a)
                 await redis_kv.delete(key)
-                await message.answer(f"✅ Коллекция «{new_col.title}» импортирована по коду.", reply_markup=collection_menu_kb(new_col.id, page=1))
+                await message.answer(
+                    f"✅ Коллекция «{new_col.title}» импортирована по коду.",
+                    reply_markup=collection_menu_kb(new_col.id, page=1),
+                )
                 return
-
 
     @router.callback_query(F.data.startswith("col:menu:"))
     async def col_menu_page(cb: types.CallbackQuery) -> None:
         parts = cb.data.split(":")
         cid = int(parts[2])
         page = int(parts[3]) if len(parts) > 3 else 1
-        await cb.message.edit_reply_markup(reply_markup=collection_menu_kb(cid, page=page))
+        await cb.message.edit_reply_markup(
+            reply_markup=collection_menu_kb(cid, page=page)
+        )
         await cb.answer()
 
     @router.callback_query(F.data.startswith("col:clear:confirm:"))
@@ -682,9 +707,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             parse_mode="Markdown",
         )
         await cb.answer()
-            
 
-    
     @router.callback_query(F.data == "col:add_by_code")
     async def coll_add_by_code(cb: types.CallbackQuery) -> None:
         await redis_kv.set_json(
@@ -694,7 +717,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.message.answer("Вставьте код, которым поделился друг:")
         await cb.answer()
-    
+
     @router.callback_query(F.data.startswith("col:export:csv:"))
     async def export_collection_csv(cb: types.CallbackQuery) -> None:
         try:
@@ -735,5 +758,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             caption=f"Экспорт коллекции «{col.title}» ({len(pairs)} карточек).",
         )
         await cb.answer()
+
     router.priority = -10
     return router

@@ -214,7 +214,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         await cb.message.answer_document(BufferedInputFile(data, filename=filename))
         await cb.answer("Экспорт готов!")
 
-    
     @router.callback_query(F.data == "game:hint")
     async def cb_game_hint(cb: types.CallbackQuery) -> None:
         sess = await GameSession.load(redis_kv, cb.from_user.id)
@@ -232,7 +231,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         if len(hints) >= 3:
             await cb.answer("Лимит 3 подсказки для карточки", show_alert=True)
             return
-
 
         gd = GameData(async_session_maker)
         qa = await gd.get_item_qa(item_id)
@@ -259,6 +257,7 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         await sess.save(redis_kv, ttl=getattr(redis_kv, "ttl_seconds", None))
 
         await render_current_question(cb.message, sess)
+
     async def render_current_question(msg: types.Message, sess: GameSession) -> None:
         gd = GameData(async_session_maker)
 
@@ -289,7 +288,11 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
             text = fmt_question(title, q, progress, hints)
 
         await msg.edit_text(
-            text, reply_markup=game_controls_kb(showing_answer=sess.showing_answer, hints_used=len(sess.hints.get(str(item_id), [])))
+            text,
+            reply_markup=game_controls_kb(
+                showing_answer=sess.showing_answer,
+                hints_used=len(sess.hints.get(str(item_id), [])),
+            ),
         )
 
     async def render_finished(msg: types.Message, sess: GameSession) -> None:
@@ -301,6 +304,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         await msg.edit_text(
             text, reply_markup=game_finished_kb(has_wrong=counts.get("unknown", 0) > 0)
         )
-        
+
     router.priority = -1
     return router
