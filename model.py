@@ -37,7 +37,7 @@ def clean_response(text):
     return text
 
 
-def generate_hint(question):
+def generate_hint(question: str, prev_hints: list[str]) -> str:
     prompt = (
         "ТЫ НЕ ДОЛЖЕН ИСПОЛЬЗОВАТЬ ИЕРОГЛИФЫ. ты должен дать ПОДСКАЗКУ, а не ответ по вопросу, чтобы пользователь сам догадался: "
         + question

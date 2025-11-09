@@ -14,38 +14,46 @@ def game_collections_kb(collections: Sequence, page: int = 0) -> InlineKeyboardM
 
     for col in chunk:
         title = getattr(col, "title", None) or "Без названия"
-        b.button(text=f"🎮 {title}", callback_data=f"game:begin:{col.id}")
+        cid = getattr(col, "id", None) or getattr(col, "collection_id", None)
+        if cid is None:
+            continue
+        b.button(text=f"🧩 {title[:60]}", callback_data=f"game:begin:{cid}")
+
+    # пагинация
+    total = len(collections)
+    pages = (total + PAGE_SIZE_COLLECTIONS - 1) // PAGE_SIZE_COLLECTIONS
+    if pages > 1:
+        nav = InlineKeyboardBuilder()
+        if page > 0:
+            nav.button(text="⬅️", callback_data=f"game:page:{page-1}")
+        nav.button(text=f"{page+1}/{pages}", callback_data="noop")
+        if page < pages - 1:
+            nav.button(text="➡️", callback_data=f"game:page:{page+1}")
+        b.row(*nav.buttons)
+
     b.adjust(1)
-
-    nav = []
-    if page > 0:
-        nav.append(
-            InlineKeyboardButton(text="⬅️ Назад", callback_data=f"game:page:{page-1}")
-        )
-    if start + PAGE_SIZE_COLLECTIONS < len(collections):
-        nav.append(
-            InlineKeyboardButton(text="Вперед ➡️", callback_data=f"game:page:{page+1}")
-        )
-    if nav:
-        b.row(*nav)
-
-    b.row(InlineKeyboardButton(text="↩️ К списку коллекций", callback_data="col:list"))
     return b.as_markup()
 
 
-def game_controls_kb(showing_answer: bool = False) -> InlineKeyboardMarkup:
+def game_controls_kb(*, showing_answer: bool, hints_used: int = 0) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
-    if not showing_answer:
-        b.button(text="👀 Показать ответ", callback_data="game:show")
-        b.button(text="↷ Пропустить", callback_data="game:skip")
-        b.button(text="➡️ Далее", callback_data="game:next")
-        b.adjust(1)
-    else:
+
+    if showing_answer:
         b.button(text="🙈 Скрыть ответ", callback_data="game:hide")
-        b.button(text="👍 Знал", callback_data="game:known")
-        b.button(text="👎 Не знал", callback_data="game:unknown")
-        b.button(text="↷ Пропустить", callback_data="game:skip")
-        b.adjust(1)
+    else:
+        b.button(text="👁 Показать ответ", callback_data="game:show")
+
+    # Подсказки — максимум 3
+    if hints_used < 3:
+        b.button(text=f"💡 Подсказка ({hints_used}/3)", callback_data="game:hint")
+
+    # Оценка/навигация
+    b.button(text="✅ Знаю", callback_data="game:known")
+    b.button(text="❌ Не знаю", callback_data="game:unknown")
+    b.button(text="⏭ Пропустить", callback_data="game:skip")
+    b.button(text="➡️ Дальше", callback_data="game:next")
+
+    b.adjust(1)
     return b.as_markup()
 
 

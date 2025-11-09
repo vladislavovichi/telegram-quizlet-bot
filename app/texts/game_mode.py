@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 
-def fmt_question(title: str, q: str, progress: str) -> str:
+def fmt_question(title: str, q: str, progress: str, hints: list[str] | None = None) -> str:
     return (
         f"🧩 <b>{escape(title)}</b>\n\n"
-        f"<b>Вопрос:</b>\n{escape(q)}\n\n"
-        f"Прогресс: <code>{progress}</code>"
+        f"<b>Вопрос:</b>\n{escape(q)}\n\n\n" + ("" if not hints else "\n".join([f"<b>{i+1} подсказка:</b>\n{escape(h)}\n" for i, h in enumerate(hints[:3])]))
+        + f"Прогресс: <code>{progress}</code>"
     )
 
 
-def fmt_answer(title: str, q: str, a: str, progress: str) -> str:
+def fmt_answer(title: str, q: str, a: str, progress: str, hints: list[str] | None = None) -> str:
     return (
         f"🧩 <b>{escape(title)}</b>\n\n"
         f"<b>Вопрос:</b>\n{escape(q)}\n\n"
-        f"<b>Ответ:</b>\n{escape(a)}\n\n"
-        f"Прогресс: <code>{progress}</code>"
+        f"<b>Ответ:</b>\n{escape(a)}\n\n\n" + ("" if not hints else "\n".join([f"<b>{i+1} подсказка:</b>\n{escape(h)}\n" for i, h in enumerate(hints[:3])]))
+        + f"Прогресс: <code>{progress}</code>"
     )
 
 

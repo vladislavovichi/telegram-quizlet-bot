@@ -18,6 +18,7 @@ from app.texts.game_mode import (
     fmt_choose_collection,
 )
 from app.services.game_mode import GameSession, GameData
+from app.services.hints import generate_hint_async
 from app.repos.base import with_repos
 
 log = logging.getLogger(__name__)
@@ -213,6 +214,51 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         await cb.message.answer_document(BufferedInputFile(data, filename=filename))
         await cb.answer("Экспорт готов!")
 
+    
+    @router.callback_query(F.data == "game:hint")
+    async def cb_game_hint(cb: types.CallbackQuery) -> None:
+        sess = await GameSession.load(redis_kv, cb.from_user.id)
+        if not sess or sess.done:
+            await cb.answer("Сессия не найдена. Начни игру заново.", show_alert=True)
+            return
+
+        item_id = sess.current_item_id()
+        if item_id is None:
+            await cb.answer("Карточки закончились", show_alert=True)
+            return
+
+        key = str(item_id)
+        hints = list(sess.hints.get(key, []))
+        if len(hints) >= 3:
+            await cb.answer("Лимит 3 подсказки для карточки", show_alert=True)
+            return
+
+
+        gd = GameData(async_session_maker)
+        qa = await gd.get_item_qa(item_id)
+        if not qa:
+            await cb.answer("Вопрос не найден", show_alert=True)
+            return
+
+        q, _ = qa
+
+        try:
+            await cb.answer("Генерирую подсказку…")
+            new_hint = await generate_hint_async(q, hints)
+        except Exception as e:
+            log.exception("hint generation failed: %s", e)
+            await cb.answer("Не удалось создать подсказку 😔", show_alert=True)
+            return
+
+        if not new_hint:
+            await cb.answer("Нет подсказки", show_alert=True)
+            return
+
+        hints.append(str(new_hint).strip())
+        sess.hints[key] = hints
+        await sess.save(redis_kv, ttl=getattr(redis_kv, "ttl_seconds", None))
+
+        await render_current_question(cb.message, sess)
     async def render_current_question(msg: types.Message, sess: GameSession) -> None:
         gd = GameData(async_session_maker)
 
@@ -236,13 +282,14 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
 
         q, a = qa
         progress = sess.to_progress_str()
+        hints = sess.hints.get(str(item_id), [])
         if sess.showing_answer:
-            text = fmt_answer(title, q, a, progress)
+            text = fmt_answer(title, q, a, progress, hints)
         else:
-            text = fmt_question(title, q, progress)
+            text = fmt_question(title, q, progress, hints)
 
         await msg.edit_text(
-            text, reply_markup=game_controls_kb(showing_answer=sess.showing_answer)
+            text, reply_markup=game_controls_kb(showing_answer=sess.showing_answer, hints_used=len(sess.hints.get(str(item_id), [])))
         )
 
     async def render_finished(msg: types.Message, sess: GameSession) -> None:
@@ -254,5 +301,6 @@ def get_game_mode_router(async_session_maker, redis_kv) -> Router:
         await msg.edit_text(
             text, reply_markup=game_finished_kb(has_wrong=counts.get("unknown", 0) > 0)
         )
-
+        
+    router.priority = -1
     return router

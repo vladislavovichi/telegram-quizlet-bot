@@ -50,3 +50,14 @@ class CollectionsRepo(Repo):
             )
         )
         await self.session.commit()
+
+    async def get_by_id(self, collection_id: int) -> Optional[Collection]:
+        return (
+            (
+                await self.session.execute(
+                    select(Collection).where(Collection.id == collection_id)
+                )
+            )
+            .scalars()
+            .first()
+        )
