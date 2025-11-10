@@ -4,7 +4,10 @@ from pydantic import Field
 
 class Settings(BaseSettings):
     BOT_TOKEN: str = Field("123:abc-def", description="Telegram bot token")
-    DB_DSN: str = Field("postgresql+asyncpg://postgres:postgres@db:5432/bot_db", description="SQLAlchemy DSN")
+    DB_DSN: str = Field(
+        "postgresql+asyncpg://postgres:postgres@db:5432/bot_db",
+        description="SQLAlchemy DSN",
+    )
     REDIS_DSN: str = "redis://localhost:6379/0"
     REDIS_PREFIX: str = "tgbot"
     REDIS_TTL_SEC: int = 900
