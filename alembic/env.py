@@ -19,6 +19,7 @@ if db_url:
 
 target_metadata = models.Base.metadata
 
+
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
