@@ -31,7 +31,7 @@ def _iter_modules(package: str) -> Iterable[Tuple[str, ModuleType]]:
         return []
     for modinfo in pkgutil.iter_modules(pkg.__path__, package + "."):
         mod_name = modinfo.name
-        # пропускаем приватные
+
         if mod_name.rsplit(".", 1)[-1].startswith(_PRIVATE_PREFIXES):
             continue
         try:
