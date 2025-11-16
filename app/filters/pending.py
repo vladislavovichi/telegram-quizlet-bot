@@ -28,7 +28,7 @@ class HasCollectionsPendingAction(BaseFilter):
             return False
 
         text = (message.text or "").strip()
-        if text in MAIN_BUTTONS:
+        if text in MAIN_BUTTONS or (text and text.startswith("/")):
             return False
 
         redis_kv: Optional[RedisKV] = self._redis_kv or data.get("redis_kv")
@@ -37,7 +37,13 @@ class HasCollectionsPendingAction(BaseFilter):
 
         key = redis_kv.pending_key(message.from_user.id)
         pending = await redis_kv.get_json(key)
-        return {"pending": pending} if pending else False
+        if not pending:
+            return False
+
+        if pending.get("type") == "profile:change_name":
+            return False
+
+        return {"pending": pending}
 
 
 class HasProfilePendingAction(BaseFilter):

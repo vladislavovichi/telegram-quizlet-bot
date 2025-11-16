@@ -23,6 +23,7 @@ def get_user_router(async_session_maker, redis_kv: RedisKV) -> Router:
         if not tg:
             return
 
+
         await ensure_user_exists(async_session_maker, tg.id, tg.username)
 
         text = (
@@ -41,7 +42,10 @@ def get_user_router(async_session_maker, redis_kv: RedisKV) -> Router:
         profile = await load_profile(async_session_maker, tg.id, tg.username)
         text = make_profile_text(tg, profile)
 
-        await message.answer(text, reply_markup=profile_inline_kb())
+        await message.answer(
+            text,
+            reply_markup=profile_inline_kb(),
+        )
 
     @router.callback_query(F.data == "profile:change_name")
     async def cb_profile_change_name(cb: types.CallbackQuery) -> None:
@@ -113,7 +117,10 @@ def get_user_router(async_session_maker, redis_kv: RedisKV) -> Router:
             name_override=new_name,
         )
 
-        await message.answer(text, reply_markup=profile_inline_kb())
+        await message.answer(
+            text,
+            reply_markup=profile_inline_kb(),
+        )
 
     @router.message(Command("cancel"))
     async def cmd_cancel(message: types.Message) -> None:
