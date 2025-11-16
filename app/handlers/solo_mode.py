@@ -12,6 +12,7 @@ from app.keyboards.solo_mode import (
     solo_controls_kb,
     solo_finished_kb,
 )
+from app.services.collections_facade import get_user_and_collections
 from app.texts.solo_mode import (
     fmt_question,
     fmt_answer,
@@ -26,7 +27,6 @@ from app.services.solo_mode import (
     start_new_solo_session,
 )
 from app.services.hints import generate_hint_async
-from app.repos.base import with_repos
 from app.services.redis_kv import RedisKV
 
 log = logging.getLogger(__name__)
@@ -41,22 +41,30 @@ def get_solo_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         key = redis_kv.pending_key(message.from_user.id)
         await redis_kv.delete(key)
 
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(
-                message.from_user.id, message.from_user.username
-            )
-            all_cols = await cols.list_by_user(u.id)
+        uc = await get_user_and_collections(
+            async_session_maker,
+            message.from_user.id,
+            message.from_user.username,
+        )
+        all_cols = uc.collections
+
         await message.answer(
-            fmt_choose_collection(), reply_markup=solo_collections_kb(all_cols, page=0)
+            fmt_choose_collection(),
+            reply_markup=solo_collections_kb(all_cols, page=0),
         )
 
     @router.callback_query(F.data == "solo:choose")
     async def cb_solo_choose(cb: types.CallbackQuery) -> None:
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            all_cols = await cols.list_by_user(u.id)
+        uc = await get_user_and_collections(
+            async_session_maker,
+            cb.from_user.id,
+            cb.from_user.username,
+        )
+        all_cols = uc.collections
+
         await cb.message.edit_text(
-            fmt_choose_collection(), reply_markup=solo_collections_kb(all_cols, page=0)
+            fmt_choose_collection(),
+            reply_markup=solo_collections_kb(all_cols, page=0),
         )
         await cb.answer()
 
@@ -66,9 +74,14 @@ def get_solo_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             page = int(cb.data.split(":")[2])
         except Exception:
             page = 0
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            all_cols = await cols.list_by_user(u.id)
+
+        uc = await get_user_and_collections(
+            async_session_maker,
+            cb.from_user.id,
+            cb.from_user.username,
+        )
+        all_cols = uc.collections
+
         await cb.message.edit_text(
             fmt_choose_collection(),
             reply_markup=solo_collections_kb(all_cols, page=page),

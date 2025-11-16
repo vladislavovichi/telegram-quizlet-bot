@@ -5,8 +5,7 @@ from typing import List, Tuple, Optional
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.collection import Collection
-from app.models.collection import CollectionItem
+from app.models.collection import Collection, CollectionItem
 
 
 class ItemsRepo:
@@ -50,7 +49,7 @@ class ItemsRepo:
 
     async def get_item_owned(
         self, item_id: int, user_id: int
-    ) -> tuple[Optional[CollectionItem], Optional[Collection]]:
+    ) -> Tuple[Optional[CollectionItem], Optional[Collection]]:
         res = await self.session.execute(
             select(CollectionItem, Collection)
             .join(Collection, Collection.id == CollectionItem.collection_id)

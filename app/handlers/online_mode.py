@@ -20,7 +20,6 @@ from app.keyboards.online_mode import (
 )
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.models.online_room import MAX_PLAYERS_PER_ROOM, OnlineRoom
-from app.repos.base import with_repos
 from app.services.solo_mode import SoloData
 from app.services.online_mode import (
     clear_online_join_pending,
@@ -35,6 +34,7 @@ from app.texts.online_mode import (
     fmt_player_waiting,
     fmt_room_waiting,
 )
+from app.services.collections_facade import get_user_and_collections
 
 log = logging.getLogger(__name__)
 
@@ -79,9 +79,10 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             await cb.answer("Сначала выйди из текущей комнаты.", show_alert=True)
             return
 
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            all_cols = await cols.list_by_user(u.id)
+        uc = await get_user_and_collections(
+            async_session_maker, cb.from_user.id, cb.from_user.username
+        )
+        all_cols = uc.collections
 
         if not all_cols:
             await cb.answer("У тебя пока нет коллекций.", show_alert=True)
@@ -100,9 +101,10 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         except Exception:
             page = 0
 
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            all_cols = await cols.list_by_user(u.id)
+        uc = await get_user_and_collections(
+            async_session_maker, cb.from_user.id, cb.from_user.username
+        )
+        all_cols = uc.collections
 
         await cb.message.edit_text(
             fmt_choose_collection(),
