@@ -10,7 +10,7 @@ from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
 
-from app.filters.online_mode import OnlineJoinPending
+from app.filters.online_mode import OnlineJoinPending, OnlineAnswerPending
 from app.keyboards.online_mode import (
     online_collections_kb,
     online_join_cancel_kb,
@@ -61,7 +61,10 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
 
     @router.message(F.text == "🤼 Играть онлайн")
     @router.message(Command("online"))
-    async def cmd_online(message: types.Message) -> None:
+    async def cmd_online_start(message: types.Message) -> None:
+        key = redis_kv.pending_key(message.from_user.id)
+        await redis_kv.delete(key)
+
         await message.answer(fmt_online_root(), reply_markup=online_root_kb())
 
     @router.callback_query(F.data == "online:root")
@@ -387,20 +390,16 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             async_session_maker, redis_kv, message.bot, room.room_id
         )
 
-    @router.message(F.text & ~F.text.startswith("/"))
-    async def handle_answers(message: types.Message) -> None:
-        if not message.from_user or not (message.text and message.text.strip()):
+    @router.message(
+        F.text & ~F.text.startswith("/"),
+        OnlineAnswerPending(redis_kv),
+    )
+    async def handle_answers(message: types.Message, room: OnlineRoom) -> None:
+        if not message.from_user:
             return
 
-        room = await OnlineRoom.load_by_user(redis_kv, message.from_user.id)
-        if not room or room.state != "running":
-            return
-
-        if message.from_user.id == room.owner_id:
-            return
-
-        now = pytime.time()
-        if room.question_deadline_ts is None or now > room.question_deadline_ts:
+        text = (message.text or "").strip()
+        if not text:
             return
 
         if message.from_user.id in room.answered_user_ids:
@@ -418,11 +417,11 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
 
         _, correct_answer = qa
 
+        now = pytime.time()
+
         start_ts = room.question_deadline_ts - room.seconds_per_question
         raw_dt = now - start_ts
         answer_time = max(0.0, min(raw_dt, float(room.seconds_per_question)))
-
-        text = message.text or ""
 
         for p in room.players:
             if p.user_id == message.from_user.id:
@@ -434,6 +433,8 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
 
         room.answered_user_ids.append(message.from_user.id)
         await room.save(redis_kv, ttl=ttl)
+
+        await message.answer("Ответ принят")
 
     router.priority = 0
     return router

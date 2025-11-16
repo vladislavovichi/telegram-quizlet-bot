@@ -27,16 +27,20 @@ from app.services.solo_mode import (
 )
 from app.services.hints import generate_hint_async
 from app.repos.base import with_repos
+from app.services.redis_kv import RedisKV
 
 log = logging.getLogger(__name__)
 
 
-def get_solo_mode_router(async_session_maker, redis_kv) -> Router:
+def get_solo_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
     router = Router(name="solo_mode")
 
     @router.message(F.text == "🎮 Играть одному")
     @router.message(Command("solo"))
-    async def cmd_solo(message: types.Message) -> None:
+    async def cmd_solo_start(message: types.Message) -> None:
+        key = redis_kv.pending_key(message.from_user.id)
+        await redis_kv.delete(key)
+
         async with with_repos(async_session_maker) as (_, users, cols, _):
             u = await users.get_or_create(
                 message.from_user.id, message.from_user.username
@@ -45,7 +49,6 @@ def get_solo_mode_router(async_session_maker, redis_kv) -> Router:
         await message.answer(
             fmt_choose_collection(), reply_markup=solo_collections_kb(all_cols, page=0)
         )
-
 
     @router.callback_query(F.data == "solo:choose")
     async def cb_solo_choose(cb: types.CallbackQuery) -> None:
@@ -94,7 +97,6 @@ def get_solo_mode_router(async_session_maker, redis_kv) -> Router:
             item_ids,
             ttl=getattr(redis_kv, "ttl_seconds", None),
         )
-
 
         await render_current_question(cb.message, sess)
         await cb.answer()

@@ -5,6 +5,13 @@ from aiogram.filters import BaseFilter
 from aiogram import types
 from app.services.redis_kv import RedisKV
 
+MAIN_BUTTONS = {
+    "🎮 Играть одному",
+    "👀 Мои коллекции",
+    "👤 Мой профиль",
+    "🤼 Играть онлайн",
+}
+
 
 class HasPendingAction(BaseFilter):
     def __init__(self, redis_kv: Optional[RedisKV] = None) -> None:
@@ -17,6 +24,10 @@ class HasPendingAction(BaseFilter):
         **data: Any,
     ) -> Dict[str, Any] | bool:
         if not message.from_user:
+            return False
+
+        text = (message.text or "").strip()
+        if text in MAIN_BUTTONS:
             return False
 
         redis_kv: Optional[RedisKV] = self._redis_kv or data.get("redis_kv")

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from aiogram import Router, types
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from sqlalchemy import select
 
 from app.services.db import get_session
 from app.models.user import User
 from app.keyboards.user import main_reply_kb
+from app.services.redis_kv import RedisKV
 
 
-def get_user_router(async_session_maker) -> Router:
+def get_user_router(async_session_maker, redis_kv: RedisKV) -> Router:
     router = Router(name="user")
 
     @router.message(CommandStart(deep_link=False))
@@ -31,6 +32,18 @@ def get_user_router(async_session_maker) -> Router:
             "Привет! Я квизлет бот!.\n\n"
             "Воспользуйся клавиатурой ниже для изучения моих возможностей."
         )
+        await message.answer(text, reply_markup=main_reply_kb)
+
+    @router.message(Command("cancel"))
+    async def cmd_cancel(message: types.Message) -> None:
+        tg = message.from_user
+        if not tg:
+            return
+
+        key = redis_kv.pending_key(tg.id)
+        await redis_kv.delete(key)
+
+        text = "Состояния успешно сброшены.\n\n"
         await message.answer(text, reply_markup=main_reply_kb)
 
     router.priority = -100

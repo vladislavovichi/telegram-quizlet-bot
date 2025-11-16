@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Dict, Iterable
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -105,9 +104,7 @@ async def load_solo_session(
 
     order = list(map(int, raw.get("order", [])))
     stats = {str(k): str(v) for k, v in (raw.get("stats") or {}).items()}
-    per_item_sec = {
-        str(k): int(v) for k, v in (raw.get("per_item_sec") or {}).items()
-    }
+    per_item_sec = {str(k): int(v) for k, v in (raw.get("per_item_sec") or {}).items()}
 
     return SoloSession(
         user_id=int(raw.get("user_id", user_id)),
