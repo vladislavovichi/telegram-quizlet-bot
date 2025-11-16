@@ -23,7 +23,6 @@ def get_user_router(async_session_maker, redis_kv: RedisKV) -> Router:
         if not tg:
             return
 
-
         await ensure_user_exists(async_session_maker, tg.id, tg.username)
 
         text = (
