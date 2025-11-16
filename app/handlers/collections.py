@@ -603,7 +603,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                 )
                 return
 
-
     @router.callback_query(F.data.startswith("col:menu:"))
     async def col_menu_page(cb: types.CallbackQuery) -> None:
         parts = cb.data.split(":")
@@ -714,7 +713,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             await cb.answer("Не удалось распознать коллекцию", show_alert=True)
             return
 
-
         async with with_repos(async_session_maker) as (_, users, cols, items):
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
             col = await cols.get_owned(cid, u.id)
@@ -738,7 +736,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             caption=f"Экспорт коллекции «{col.title}» ({len(pairs)} карточек).",
         )
         await cb.answer()
-
 
     router.priority = -10
     return router
