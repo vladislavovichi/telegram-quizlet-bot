@@ -20,12 +20,14 @@ from app.keyboards.collections import (
 from app.filters.pending import HasCollectionsPendingAction
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.services import importers
+from app.services.collections_facade import get_user_and_collections
 from app.services.share_code import make_share_code, parse_share_code
 from app.config import settings
 from app.keyboards.user import main_reply_kb
 
 
 MAX_ITEMS_PER_COLLECTION = 40
+
 
 
 def get_collections_router(async_session_maker, redis_kv) -> Router:
@@ -41,12 +43,10 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
 
     @router.message(F.text == "👀 Мои коллекции")
     async def show_collections(message: types.Message) -> None:
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(
-                message.from_user.id, message.from_user.username
-            )
-            all_cols = await cols.list_by_user(u.id)
-        pairs = [(c.id, c.title) for c in all_cols]
+        uc = await get_user_and_collections(
+            async_session_maker, message.from_user.id, message.from_user.username
+        )
+        pairs = [(c.id, c.title) for c in uc.collections]
         await message.answer(
             "Твои коллекции:",
             reply_markup=collections_root_kb(page=1, collections=pairs),
@@ -54,10 +54,10 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
 
     @router.callback_query(F.data == "col:list")
     async def collections_list(cb: types.CallbackQuery) -> None:
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            all_cols = await cols.list_by_user(u.id)
-        pairs = [(c.id, c.title) for c in all_cols]
+        uc = await get_user_and_collections(
+            async_session_maker, cb.from_user.id, cb.from_user.username
+        )
+        pairs = [(c.id, c.title) for c in uc.collections]
         await cb.message.edit_text(
             "Твои коллекции:",
             reply_markup=collections_root_kb(page=1, collections=pairs),
@@ -67,10 +67,11 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
     @router.callback_query(F.data.startswith("col:page:"))
     async def page_collections(cb: types.CallbackQuery) -> None:
         page = int(cb.data.split(":")[-1])
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            all_cols = await cols.list_by_user(u.id)
-        pairs = [(c.id, c.title) for c in all_cols]
+
+        uc = await get_user_and_collections(
+            async_session_maker, cb.from_user.id, cb.from_user.username
+        )
+        pairs = [(c.id, c.title) for c in uc.collections]
         await cb.message.edit_reply_markup(
             reply_markup=collections_root_kb(page=page, collections=pairs)
         )
@@ -81,8 +82,24 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         try:
             await cb.message.edit_reply_markup(reply_markup=None)
         except Exception:
-            pass
-        await cb.message.answer("Главное меню", reply_markup=main_reply_kb)
+            ...
+        await cb.message.answer(
+            "Главное меню.", reply_markup=main_reply_kb(cb.from_user.id)
+        )
+        await cb.answer()
+
+    @router.callback_query(F.data.startswith("col:menu:"))
+    async def col_menu_page(cb: types.CallbackQuery) -> None:
+        cid = int(cb.data.split(":")[-1])
+        async with with_repos(async_session_maker) as (_, users, cols, _):
+            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
+            col = await cols.get_owned(cid, u.id)
+        if not col:
+            await cb.answer("Коллекция не найдена", show_alert=True)
+            return
+        await cb.message.edit_text(
+            f"Коллекция: «{col.title}»", reply_markup=collection_menu_kb(cid, page=1)
+        )
         await cb.answer()
 
     @router.callback_query(F.data == "col:new")
@@ -303,6 +320,132 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         await cb.message.edit_text(
             "Удалить карточку безвозвратно?",
             reply_markup=item_delete_confirm_kb(item_id=item_id, collection_id=col.id),
+        )
+        await cb.answer()
+        
+    @router.callback_query(F.data.startswith("col:clear:confirm:"))
+    async def col_clear_confirm(cb: types.CallbackQuery) -> None:
+        cid = int(cb.data.split(":")[-1])
+        async with with_repos(async_session_maker) as (_, users, cols, items):
+            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
+            col = await cols.get_owned(cid, u.id)
+            if not col:
+                await cb.answer("Нет доступа/не найдено", show_alert=True)
+                return
+            deleted = await items.delete_all_in_collection(cid)
+        await cb.message.edit_text(
+            f"🧹 Коллекция «{col.title}» очищена. Удалено карточек: {deleted}.",
+            reply_markup=collection_menu_kb(cid, page=2),
+        )
+        await cb.answer("Очищено")
+
+    @router.callback_query(F.data.startswith("col:clear:"))
+    async def col_clear_prompt(cb: types.CallbackQuery) -> None:
+        cid = int(cb.data.split(":")[-1])
+        async with with_repos(async_session_maker) as (_, users, cols, _):
+            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
+            col = await cols.get_owned(cid, u.id)
+        if not col:
+            await cb.answer("Коллекция не найдена", show_alert=True)
+            return
+        await cb.message.edit_text(
+            f"Вы уверены, что хотите очистить коллекцию «{col.title}»? Это удалит все карточки.",
+            reply_markup=collection_clear_confirm_kb(cid),
+        )
+        await cb.answer()
+
+    @router.callback_query(F.data.startswith("col:import:items:"))
+    async def col_import_items_prompt(cb: types.CallbackQuery) -> None:
+        cid = int(cb.data.split(":")[-1])
+        await redis_kv.set_json(
+            redis_kv.pending_key(cb.from_user.id),
+            {"type": "import:items:await_file", "cid": cid},
+            ex=redis_kv.ttl_seconds,
+        )
+        example = (
+            "📥 Импорт карточек (CSV/Excel)\n\n"
+            "Отправьте файл с колонками: *question*, *answer*.\n"
+            "Первая строка — заголовки. Пример CSV:\n"
+            "```csv\nquestion,answer\nСтолица Франции?,Париж\n2+2=?,4\n```\n"
+            "_Максимум 40 карточек в коллекции. Дубликаты по вопросу игнорируются._"
+        )
+        await cb.message.answer(example, parse_mode="Markdown")
+        await cb.answer("Жду файл")
+
+    @router.callback_query(F.data == "col:import:collections:prompt")
+    async def col_import_collections_prompt(cb: types.CallbackQuery) -> None:
+        await redis_kv.set_json(
+            redis_kv.pending_key(cb.from_user.id),
+            {"type": "import:collections:await_file"},
+            ex=redis_kv.ttl_seconds,
+        )
+        example = (
+            "📦 Импорт коллекций (CSV/Excel)\n\n"
+            "Отправьте файл с колонками: *title*, *question*, *answer*.\n"
+            "*title* — название коллекции. Пример CSV:\n"
+            "```csv\ntitle,question,answer\nГеография,Столица Франции?,Париж\nМатематика,2+2=?,4\n```"
+        )
+        await cb.message.answer(example, parse_mode="Markdown")
+        await cb.answer("Жду файл")
+
+    @router.callback_query(F.data.startswith("col:share:"))
+    async def col_share_code(cb: types.CallbackQuery) -> None:
+        cid = int(cb.data.split(":")[-1])
+        async with with_repos(async_session_maker) as (_, users, cols, _):
+            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
+            col = await cols.get_owned(cid, u.id)
+        if not col:
+            await cb.answer("Коллекция не найдена", show_alert=True)
+            return
+        code = make_share_code(cid, u.id, settings.BOT_TOKEN)
+        await cb.message.answer(
+            f"🔗 Код для импорта коллекции «{col.title}»:\n`{code}`\n"
+            "Передайте его другу. У него должен быть бот.",
+            parse_mode="Markdown",
+        )
+        await cb.answer()
+
+    @router.callback_query(F.data == "col:add_by_code")
+    async def coll_add_by_code(cb: types.CallbackQuery) -> None:
+        await redis_kv.set_json(
+            redis_kv.pending_key(cb.from_user.id),
+            {"type": "share:await_code"},
+            ex=redis_kv.ttl_seconds,
+        )
+        await cb.message.answer("Вставьте код, которым поделился друг:")
+        await cb.answer()
+
+    @router.callback_query(F.data.startswith("col:export:csv:"))
+    async def export_collection_csv(cb: types.CallbackQuery) -> None:
+        try:
+            cid = int(cb.data.split(":")[-1])
+        except Exception:
+            await cb.answer("Не удалось распознать коллекцию", show_alert=True)
+            return
+
+        from aiogram.types import BufferedInputFile
+
+        async with with_repos(async_session_maker) as (_, users, cols, items):
+            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
+            col = await cols.get_owned(cid, u.id)
+            if not col:
+                await cb.answer("Нет доступа или коллекция не найдена", show_alert=True)
+                return
+
+            pairs = await items.list_question_answer_pairs(cid)
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["question", "answer"])
+        for q, a in pairs:
+            writer.writerow([q, a])
+        data = output.getvalue().encode("utf-8-sig")
+        output.close()
+
+        filename = f"collection_{cid}.csv"
+        await cb.message.answer_document(
+            document=BufferedInputFile(data, filename=filename),
+            caption=f"Экспорт коллекции «{col.title}» ({len(pairs)} карточек).",
         )
         await cb.answer()
 
@@ -602,140 +745,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                     reply_markup=collection_menu_kb(new_col.id, page=1),
                 )
                 return
-
-    @router.callback_query(F.data.startswith("col:menu:"))
-    async def col_menu_page(cb: types.CallbackQuery) -> None:
-        parts = cb.data.split(":")
-        cid = int(parts[2])
-        page = int(parts[3]) if len(parts) > 3 else 1
-        await cb.message.edit_reply_markup(
-            reply_markup=collection_menu_kb(cid, page=page)
-        )
-        await cb.answer()
-
-    @router.callback_query(F.data.startswith("col:clear:confirm:"))
-    async def col_clear_confirm(cb: types.CallbackQuery) -> None:
-        cid = int(cb.data.split(":")[-1])
-        async with with_repos(async_session_maker) as (_, users, cols, items):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            col = await cols.get_owned(cid, u.id)
-            if not col:
-                await cb.answer("Нет доступа/не найдено", show_alert=True)
-                return
-            deleted = await items.delete_all_in_collection(cid)
-        await cb.message.edit_text(
-            f"🧹 Коллекция «{col.title}» очищена. Удалено карточек: {deleted}.",
-            reply_markup=collection_menu_kb(cid, page=2),
-        )
-        await cb.answer("Очищено")
-
-    @router.callback_query(F.data.startswith("col:clear:"))
-    async def col_clear_prompt(cb: types.CallbackQuery) -> None:
-        cid = int(cb.data.split(":")[-1])
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            col = await cols.get_owned(cid, u.id)
-        if not col:
-            await cb.answer("Коллекция не найдена", show_alert=True)
-            return
-        await cb.message.edit_text(
-            f"Вы уверены, что хотите очистить коллекцию «{col.title}»? Это удалит все карточки.",
-            reply_markup=collection_clear_confirm_kb(cid),
-        )
-        await cb.answer()
-
-    @router.callback_query(F.data.startswith("col:import:items:"))
-    async def col_import_items_prompt(cb: types.CallbackQuery) -> None:
-        cid = int(cb.data.split(":")[-1])
-        await redis_kv.set_json(
-            redis_kv.pending_key(cb.from_user.id),
-            {"type": "import:items:await_file", "cid": cid},
-            ex=redis_kv.ttl_seconds,
-        )
-        example = (
-            "📥 Импорт карточек (CSV/Excel)\n\n"
-            "Отправьте файл с колонками: *question*, *answer*.\n"
-            "Первая строка — заголовки. Пример CSV:\n"
-            "```csv\nquestion,answer\nСтолица Франции?,Париж\n2+2=?,4\n```\n"
-            "_Максимум 40 карточек в коллекции. Дубликаты по вопросу игнорируются._"
-        )
-        await cb.message.answer(example, parse_mode="Markdown")
-        await cb.answer("Жду файл")
-
-    @router.callback_query(F.data == "col:import:collections:prompt")
-    async def col_import_collections_prompt(cb: types.CallbackQuery) -> None:
-        await redis_kv.set_json(
-            redis_kv.pending_key(cb.from_user.id),
-            {"type": "import:collections:await_file"},
-            ex=redis_kv.ttl_seconds,
-        )
-        example = (
-            "📦 Импорт коллекций (CSV/Excel)\n\n"
-            "Отправьте файл с колонками: *title*, *question*, *answer*.\n"
-            "*title* — название коллекции. Пример CSV:\n"
-            "```csv\ntitle,question,answer\nГеография,Столица Франции?,Париж\nМатематика,2+2=?,4\n```"
-        )
-        await cb.message.answer(example, parse_mode="Markdown")
-        await cb.answer("Жду файл")
-
-    @router.callback_query(F.data.startswith("col:share:"))
-    async def col_share_code(cb: types.CallbackQuery) -> None:
-        cid = int(cb.data.split(":")[-1])
-        async with with_repos(async_session_maker) as (_, users, cols, _):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            col = await cols.get_owned(cid, u.id)
-        if not col:
-            await cb.answer("Коллекция не найдена", show_alert=True)
-            return
-        code = make_share_code(cid, u.id, settings.BOT_TOKEN)
-        await cb.message.answer(
-            f"🔗 Код для импорта коллекции «{col.title}»:\n`{code}`\n"
-            "Передайте его другу. У него должен быть бот.",
-            parse_mode="Markdown",
-        )
-        await cb.answer()
-
-    @router.callback_query(F.data == "col:add_by_code")
-    async def coll_add_by_code(cb: types.CallbackQuery) -> None:
-        await redis_kv.set_json(
-            redis_kv.pending_key(cb.from_user.id),
-            {"type": "share:await_code"},
-            ex=redis_kv.ttl_seconds,
-        )
-        await cb.message.answer("Вставьте код, которым поделился друг:")
-        await cb.answer()
-
-    @router.callback_query(F.data.startswith("col:export:csv:"))
-    async def export_collection_csv(cb: types.CallbackQuery) -> None:
-        try:
-            cid = int(cb.data.split(":")[-1])
-        except Exception:
-            await cb.answer("Не удалось распознать коллекцию", show_alert=True)
-            return
-
-        async with with_repos(async_session_maker) as (_, users, cols, items):
-            u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
-            col = await cols.get_owned(cid, u.id)
-            if not col:
-                await cb.answer("Нет доступа или коллекция не найдена", show_alert=True)
-                return
-
-            pairs = await items.list_question_answer_pairs(cid)
-
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(["question", "answer"])
-        for q, a in pairs:
-            writer.writerow([q, a])
-        data = output.getvalue().encode("utf-8-sig")
-        output.close()
-
-        filename = f"collection_{cid}.csv"
-        await cb.message.answer_document(
-            document=BufferedInputFile(data, filename=filename),
-            caption=f"Экспорт коллекции «{col.title}» ({len(pairs)} карточек).",
-        )
-        await cb.answer()
 
     router.priority = -10
     return router
