@@ -12,7 +12,7 @@ from app.keyboards.user import main_reply_kb
 def get_user_router(async_session_maker) -> Router:
     router = Router(name="user")
 
-    @router.message(CommandStart())
+    @router.message(CommandStart(deep_link=False))
     async def cmd_start(message: types.Message) -> None:
         tg = message.from_user
         if not tg:
