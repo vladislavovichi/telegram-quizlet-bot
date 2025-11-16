@@ -1,4 +1,10 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import (
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
+
 
 main_reply_kb = ReplyKeyboardMarkup(
     keyboard=[
@@ -14,3 +20,29 @@ main_reply_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=False,
 )
+
+
+def profile_inline_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✏️ Изменить имя",
+                    callback_data="profile:change_name",
+                )
+            ]
+        ]
+    )
+
+
+def profile_cancel_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🚫 Отменить",
+                    callback_data="profile:cancel_change_name",
+                )
+            ]
+        ]
+    )

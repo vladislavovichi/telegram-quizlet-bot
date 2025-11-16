@@ -16,7 +16,7 @@ from app.keyboards.collections import (
     collection_clear_confirm_kb,
     collection_deleted_kb,
 )
-from app.filters.pending import HasPendingAction
+from app.filters.pending import HasCollectionsPendingAction
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.services import importers
 from app.services.share_code import make_share_code, parse_share_code
@@ -305,7 +305,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.answer()
 
-    @router.message(HasPendingAction(redis_kv))
+    @router.message(HasCollectionsPendingAction(redis_kv))
     async def handle_pending(message: types.Message, pending: dict) -> None:
         typ = pending.get("type")
         key = redis_kv.pending_key(message.from_user.id)
