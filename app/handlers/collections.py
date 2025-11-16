@@ -29,7 +29,6 @@ from app.keyboards.user import main_reply_kb
 MAX_ITEMS_PER_COLLECTION = 40
 
 
-
 def get_collections_router(async_session_maker, redis_kv) -> Router:
     router = Router(name="collections")
     router.message.middleware(RedisKVMiddleware(redis_kv))
@@ -111,7 +110,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             reply_markup=collection_menu_kb(collection_id=cid, page=page),
         )
         await cb.answer()
-
 
     @router.callback_query(F.data == "col:new")
     async def start_new(cb: types.CallbackQuery) -> None:
@@ -333,7 +331,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             reply_markup=item_delete_confirm_kb(item_id=item_id, collection_id=col.id),
         )
         await cb.answer()
-        
+
     @router.callback_query(F.data.startswith("col:clear:confirm:"))
     async def col_clear_confirm(cb: types.CallbackQuery) -> None:
         cid = int(cb.data.split(":")[-1])
@@ -433,8 +431,6 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         except Exception:
             await cb.answer("Не удалось распознать коллекцию", show_alert=True)
             return
-
-        from aiogram.types import BufferedInputFile
 
         async with with_repos(async_session_maker) as (_, users, cols, items):
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)

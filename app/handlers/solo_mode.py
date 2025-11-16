@@ -27,7 +27,6 @@ from app.services.solo_mode import (
     start_new_solo_session,
 )
 from app.services.hints import generate_hint_async
-from app.repos.base import with_repos
 from app.services.redis_kv import RedisKV
 
 log = logging.getLogger(__name__)
@@ -53,7 +52,6 @@ def get_solo_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             fmt_choose_collection(),
             reply_markup=solo_collections_kb(all_cols, page=0),
         )
-
 
     @router.callback_query(F.data == "solo:choose")
     async def cb_solo_choose(cb: types.CallbackQuery) -> None:

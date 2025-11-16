@@ -20,7 +20,6 @@ from app.keyboards.online_mode import (
 )
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.models.online_room import MAX_PLAYERS_PER_ROOM, OnlineRoom
-from app.repos.base import with_repos
 from app.services.solo_mode import SoloData
 from app.services.online_mode import (
     clear_online_join_pending,
