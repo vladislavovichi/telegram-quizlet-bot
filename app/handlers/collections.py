@@ -49,7 +49,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         pairs = [(c.id, c.title) for c in uc.collections]
         await message.answer(
             "Твои коллекции:",
-            reply_markup=collections_root_kb(page=1, collections=pairs),
+            reply_markup=collections_root_kb(page=0, collections=pairs),
         )
 
     @router.callback_query(F.data == "col:list")
@@ -60,7 +60,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         pairs = [(c.id, c.title) for c in uc.collections]
         await cb.message.edit_text(
             "Твои коллекции:",
-            reply_markup=collections_root_kb(page=1, collections=pairs),
+            reply_markup=collections_root_kb(page=0, collections=pairs),
         )
         await cb.answer()
 
@@ -90,17 +90,28 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
 
     @router.callback_query(F.data.startswith("col:menu:"))
     async def col_menu_page(cb: types.CallbackQuery) -> None:
-        cid = int(cb.data.split(":")[-1])
+        parts = cb.data.split(":")
+        if len(parts) < 3:
+            await cb.answer("Некорректные данные кнопки.", show_alert=True)
+            return
+
+        cid = int(parts[2])
+        page = int(parts[3]) if len(parts) > 3 else 1
+
         async with with_repos(async_session_maker) as (_, users, cols, _):
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
             col = await cols.get_owned(cid, u.id)
+
         if not col:
             await cb.answer("Коллекция не найдена", show_alert=True)
             return
+
         await cb.message.edit_text(
-            f"Коллекция: «{col.title}»", reply_markup=collection_menu_kb(cid, page=1)
+            f"Коллекция: «{col.title}»",
+            reply_markup=collection_menu_kb(collection_id=cid, page=page),
         )
         await cb.answer()
+
 
     @router.callback_query(F.data == "col:new")
     async def start_new(cb: types.CallbackQuery) -> None:
