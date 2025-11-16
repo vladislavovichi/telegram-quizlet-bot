@@ -94,7 +94,7 @@ def collection_menu_kb(collection_id: int, page: int = 1) -> InlineKeyboardMarku
                 text="📃 Список карточек", callback_data=f"item:list:{collection_id}:0"
             ),
             InlineKeyboardButton(
-                text="🎮 Играть", callback_data=f"game:begin:{collection_id}"
+                text="🎮 Играть", callback_data=f"solo:begin:{collection_id}"
             ),
         )
 
@@ -155,7 +155,7 @@ def collection_edit_kb(collection_id: int) -> InlineKeyboardMarkup:
             text="📃 Список карточек", callback_data=f"item:list:{collection_id}:0"
         ),
         InlineKeyboardButton(
-            text="🎮 Играть", callback_data=f"game:begin:{collection_id}"
+            text="🎮 Играть", callback_data=f"solo:begin:{collection_id}"
         ),
     )
     kb.row(

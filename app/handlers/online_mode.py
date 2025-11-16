@@ -21,7 +21,7 @@ from app.keyboards.online_mode import (
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.models.online_room import MAX_PLAYERS_PER_ROOM, OnlineRoom
 from app.repos.base import with_repos
-from app.services.game_mode import GameData
+from app.services.solo_mode import SoloData
 from app.services.online_mode import (
     clear_online_join_pending,
     run_room_loop,
@@ -29,7 +29,7 @@ from app.services.online_mode import (
     update_owner_room_message,
 )
 from app.services.redis_kv import RedisKV
-from app.texts.game_mode import fmt_choose_collection
+from app.texts.solo_mode import fmt_choose_collection
 from app.texts.online_mode import (
     fmt_online_root,
     fmt_player_waiting,
@@ -116,7 +116,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             await cb.answer("Некорректная коллекция.", show_alert=True)
             return
 
-        gd = GameData(async_session_maker)
+        gd = SoloData(async_session_maker)
         item_ids = await gd.get_item_ids(collection_id)
         if not item_ids:
             await cb.answer("В коллекции пока нет карточек.", show_alert=True)
@@ -320,7 +320,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         )
         await room.save(redis_kv, ttl=ttl)
 
-        gd = GameData(async_session_maker)
+        gd = SoloData(async_session_maker)
         title = await gd.get_collection_title_by_id(room.collection_id) or "Коллекция"
 
         await message.answer(
@@ -370,7 +370,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         await OnlineRoom.set_user_room(redis_kv, user_id, room.room_id, ttl=ttl)
         await room.save(redis_kv, ttl=ttl)
 
-        gd = GameData(async_session_maker)
+        gd = SoloData(async_session_maker)
         title = await gd.get_collection_title_by_id(room.collection_id) or "Коллекция"
 
         await message.answer(
@@ -411,7 +411,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         if item_id is None:
             return
 
-        gd = GameData(async_session_maker)
+        gd = SoloData(async_session_maker)
         qa = await gd.get_item_qa(item_id)
         if not qa:
             return
