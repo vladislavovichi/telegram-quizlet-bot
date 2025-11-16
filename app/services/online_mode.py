@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from app.models.online_room import OnlineRoom
 from app.repos.base import with_repos
-from app.services.game_mode import GameData
+from app.services.solo_mode import SoloData
 from app.services.redis_kv import RedisKV
 from app.texts.online_mode import (
     fmt_online_answer,
@@ -70,7 +70,7 @@ async def update_owner_room_message(
     if room.owner_wait_chat_id is None or room.owner_wait_message_id is None:
         return
 
-    gd = GameData(async_session_maker)
+    gd = SoloData(async_session_maker)
     title = await gd.get_collection_title_by_id(room.collection_id) or "Коллекция"
 
     try:
@@ -97,7 +97,7 @@ async def run_room_loop(
     redis_kv: RedisKV,
     bot,
 ) -> None:
-    gd = GameData(async_session_maker)
+    gd = SoloData(async_session_maker)
     ttl = redis_kv.ttl_seconds
 
     while True:
@@ -238,7 +238,7 @@ async def _send_live_scoreboard_to_owner(
 
 async def _finish_room(
     async_session_maker,
-    gd: GameData,
+    gd: SoloData,
     redis_kv: RedisKV,
     bot,
     room: OnlineRoom,

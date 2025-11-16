@@ -5,7 +5,7 @@ from typing import Sequence
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from app.keyboards.game_mode import PAGE_SIZE_COLLECTIONS
+from app.keyboards.solo_mode import PAGE_SIZE_COLLECTIONS
 
 
 def online_root_kb() -> InlineKeyboardMarkup:
