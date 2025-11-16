@@ -16,11 +16,6 @@ MAIN_BUTTONS = {
 
 
 class HasCollectionsPendingAction(BaseFilter):
-    """
-    Общий pending-фильтр для работы с коллекциями / карточками.
-    Используется в handlers/collections.py.
-    """
-
     def __init__(self, redis_kv: Optional[RedisKV] = None) -> None:
         self._redis_kv = redis_kv
 
