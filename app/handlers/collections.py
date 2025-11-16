@@ -3,6 +3,7 @@ import io
 import csv
 import re
 from aiogram import Router, F, types
+from aiogram.types import BufferedInputFile
 
 from app.repos.base import with_repos
 from app.keyboards.collections import (
@@ -570,11 +571,14 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                 if not code:
                     await message.answer("Вставьте код.")
                     return
+
                 parsed = parse_share_code(code, settings.BOT_TOKEN)
                 if not parsed:
                     await message.answer("Код не распознан или повреждён.")
                     return
-                cid, owner_id = parsed
+
+                cid, _owner_id = parsed
+
                 async with with_repos(async_session_maker) as (_, users, cols, items):
                     u = await users.get_or_create(
                         message.from_user.id, message.from_user.username
@@ -587,34 +591,18 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                         return
 
                     new_col = await cols.create(u.id, src.title)
-                    pairs = await items.list_pairs(cid)
-                    for _, q in pairs:
-                        pass
 
-                from sqlalchemy import select
-                from app.models.collection import CollectionItem
-
-                async with with_repos(async_session_maker) as (
-                    session,
-                    users,
-                    cols,
-                    items,
-                ):
-                    pairs_rows = await session.execute(
-                        select(CollectionItem.question, CollectionItem.answer)
-                        .where(CollectionItem.collection_id == cid)
-                        .order_by(
-                            CollectionItem.position.asc(), CollectionItem.id.asc()
-                        )
-                    )
-                    for q, a in pairs_rows.all():
+                    pairs = await items.list_question_answer_pairs(cid)
+                    for q, a in pairs:
                         await items.add(new_col.id, q, a)
+
                 await redis_kv.delete(key)
                 await message.answer(
                     f"✅ Коллекция «{new_col.title}» импортирована по коду.",
                     reply_markup=collection_menu_kb(new_col.id, page=1),
                 )
                 return
+
 
     @router.callback_query(F.data.startswith("col:menu:"))
     async def col_menu_page(cb: types.CallbackQuery) -> None:
@@ -726,23 +714,15 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             await cb.answer("Не удалось распознать коллекцию", show_alert=True)
             return
 
-        from aiogram.types import BufferedInputFile
-        from sqlalchemy import select
-        from app.models.collection import CollectionItem
 
-        async with with_repos(async_session_maker) as (session, users, cols, _):
+        async with with_repos(async_session_maker) as (_, users, cols, items):
             u = await users.get_or_create(cb.from_user.id, cb.from_user.username)
             col = await cols.get_owned(cid, u.id)
             if not col:
                 await cb.answer("Нет доступа или коллекция не найдена", show_alert=True)
                 return
 
-            rows = await session.execute(
-                select(CollectionItem.question, CollectionItem.answer)
-                .where(CollectionItem.collection_id == cid)
-                .order_by(CollectionItem.position.asc(), CollectionItem.id.asc())
-            )
-            pairs = rows.all()
+            pairs = await items.list_question_answer_pairs(cid)
 
         output = io.StringIO()
         writer = csv.writer(output)
@@ -758,6 +738,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             caption=f"Экспорт коллекции «{col.title}» ({len(pairs)} карточек).",
         )
         await cb.answer()
+
 
     router.priority = -10
     return router
