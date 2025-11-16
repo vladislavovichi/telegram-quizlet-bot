@@ -10,11 +10,6 @@ from app.services.online_mode import get_online_join_pending
 
 
 class OnlineJoinPending(BaseFilter):
-    """
-    Фильтр для pending-состояния "ждём код комнаты" в онлайн-режиме.
-    Никак не трогает глобальный pending проекта.
-    """
-
     def __init__(self, redis_kv: RedisKV):
         self.redis_kv = redis_kv
 
@@ -28,5 +23,4 @@ class OnlineJoinPending(BaseFilter):
         if not data:
             return False
 
-        # кладём в kwargs хендлера, если вдруг пригодится
         return {"online_pending": data}
