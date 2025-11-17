@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Callable, List
+
 import asyncio
 import logging
+from typing import Callable, List
 
 log = logging.getLogger(__name__)
 

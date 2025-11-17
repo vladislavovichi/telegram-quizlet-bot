@@ -1,16 +1,17 @@
 import logging
 from types import SimpleNamespace
+
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
 
-from .config import settings
+from app.handlers import register_handlers
 from app.services.db import make_engine_and_session
 from app.services.redis_client import create_redis
 from app.services.redis_kv import RedisKV
 
-from app.handlers import register_handlers
+from .config import settings
 
 log = logging.getLogger(__name__)
 

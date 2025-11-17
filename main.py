@@ -1,6 +1,7 @@
 import asyncio
-from app.factory import create_app
 import logging
+
+from app.factory import create_app
 
 logging.basicConfig(level=logging.INFO)
 

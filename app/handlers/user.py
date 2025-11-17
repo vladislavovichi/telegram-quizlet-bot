@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from aiogram import Router, F, types
-from aiogram.filters import CommandStart, Command
+from aiogram import F, Router, types
+from aiogram.filters import Command, CommandStart
 
-from app.keyboards.user import main_reply_kb, profile_inline_kb, profile_cancel_kb
-from app.services.redis_kv import RedisKV
 from app.filters.pending import HasProfilePendingAction
+from app.keyboards.user import main_reply_kb, profile_cancel_kb, profile_inline_kb
+from app.services.redis_kv import RedisKV
 from app.services.user_profile import (
     ensure_user_exists,
     load_profile,

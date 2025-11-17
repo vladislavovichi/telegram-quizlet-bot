@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Tuple, Optional
 import html
+from typing import Iterable, List, Optional, Tuple
 
 
 def fmt_online_root() -> str:

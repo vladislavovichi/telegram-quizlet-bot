@@ -1,7 +1,7 @@
 [project]
 name = "telegram-quizlet-bot"
 version = "0.1.0"
-description = "Telegram bot"
+description = "Qwizlet-like telegram bot"
 authors = [
     {name = "Echways",email = "identyfly@gmail.com"}
 ]

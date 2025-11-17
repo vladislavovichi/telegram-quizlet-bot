@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 
-from app.models.user import User
 from app.models.collection import Collection
+from app.models.user import User
 from app.repos.base import with_repos
 
 

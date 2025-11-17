@@ -1,7 +1,11 @@
 from __future__ import annotations
+
 from typing import Optional
-from sqlalchemy import select, delete
+
+from sqlalchemy import delete, select
+
 from app.models.collection import Collection
+
 from .base import Repo
 
 

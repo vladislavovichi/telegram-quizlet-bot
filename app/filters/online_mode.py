@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import time
 from typing import Optional
 
-from aiogram.filters import BaseFilter
 from aiogram import types
+from aiogram.filters import BaseFilter
 
-from app.services.redis_kv import RedisKV
+from app.models.online_room import OnlineRoom
 from app.services.online_mode import (
     get_online_join_pending,
     get_online_settings_pending,
 )
-
-from app.models.online_room import OnlineRoom
-import time
+from app.services.redis_kv import RedisKV
 
 
 class OnlineJoinPending(BaseFilter):
