@@ -36,6 +36,8 @@ class OnlineRoom:
     started_at: str | None = None
     finished_at: str | None = None
 
+    deep_link: str | None = None
+
     players: List[RoomPlayer] = field(default_factory=list)
     answered_user_ids: List[int] = field(default_factory=list)
 
@@ -101,6 +103,7 @@ class OnlineRoom:
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
+            "deep_link": self.deep_link,
             "players": [
                 {
                     "user_id": p.user_id,
@@ -141,6 +144,7 @@ class OnlineRoom:
             created_at=str(data.get("created_at") or ""),
             started_at=data.get("started_at"),
             finished_at=data.get("finished_at"),
+            deep_link=data.get("deep_link"),
             players=players,
             answered_user_ids=[int(x) for x in data.get("answered_user_ids", [])],
             question_deadline_ts=(float(data.get("question_deadline_ts") or 0) or None),
@@ -224,6 +228,7 @@ class OnlineRoom:
         seconds_per_question: int,
         points_per_correct: int,
         ttl: int | None = None,
+        deep_link: str | None = None
     ) -> "OnlineRoom":
         order = list(item_ids)
         rnd = random.Random()
@@ -238,6 +243,7 @@ class OnlineRoom:
             collection_id=collection_id,
             seconds_per_question=seconds_per_question,
             points_per_correct=points_per_correct,
+            deep_link=deep_link,
             order=order,
             index=0,
             state="waiting",
@@ -257,3 +263,19 @@ class OnlineRoom:
             if not exists:
                 return code
         return f"{int(time.time()) % 1_000_000:06d}"
+    
+    @classmethod
+    async def set_room_deep_link(
+        cls,
+        redis_kv: RedisKV,
+        room_id: str,
+        deep_link: str,
+        ttl: int | None = None,
+    ) -> "OnlineRoom":
+        room = await cls.load_by_room_id(redis_kv, room_id)
+        if not room:
+            return
+        
+        room.deep_link = deep_link
+        await room.save(redis_kv, ttl=ttl)
+        return room

@@ -39,16 +39,21 @@ def online_collections_kb(collections: Sequence, page: int = 0) -> InlineKeyboar
             nav.button(text="➡️", callback_data=f"online:page:{page+1}")
         b.row(*nav.buttons)
 
+    b.button(text="❌ Отмена", callback_data="online:choose_cancel")
+
     b.adjust(1)
     return b.as_markup()
 
 
 def online_room_owner_kb(room_id: str) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
+    b.button(text="🎯 Баллов за ответ", callback_data=f"online:set_points:{room_id}")
+    b.button(text="⏱ Время на ответ", callback_data=f"online:set_time:{room_id}")
     b.button(text="🚀 Начать игру", callback_data=f"online:start:{room_id}")
     b.button(text="❌ Отмена", callback_data=f"online:cancel:{room_id}")
     b.adjust(1)
     return b.as_markup()
+
 
 
 def online_player_kb(room_id: str) -> InlineKeyboardMarkup:
@@ -59,10 +64,13 @@ def online_player_kb(room_id: str) -> InlineKeyboardMarkup:
 
 
 def online_join_cancel_kb() -> InlineKeyboardMarkup:
-    """
-    Клавиатура под сообщением, когда пользователь вводит код комнаты.
-    """
     b = InlineKeyboardBuilder()
     b.button(text="❌ Отмена", callback_data="online:join_cancel")
+    b.adjust(1)
+    return b.as_markup()
+
+def online_settings_cancel_kb(room_id: str) -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    b.button(text="❌ Отмена", callback_data=f"online:settings_cancel:{room_id}")
     b.adjust(1)
     return b.as_markup()
