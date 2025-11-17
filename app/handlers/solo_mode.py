@@ -68,6 +68,15 @@ def get_solo_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         )
         await cb.answer()
 
+    @router.callback_query(F.data == "solo:choose_cancel")
+    async def cb_solo_choose_cancel(cb: types.CallbackQuery) -> None:
+        try:
+            await cb.message.edit_text("Выбор коллекции отменён.")
+        except Exception:
+            await cb.answer("Выбор коллекции отменён.")
+        else:
+            await cb.answer()
+
     @router.callback_query(F.data.startswith("solo:page:"))
     async def cb_solo_page(cb: types.CallbackQuery) -> None:
         try:

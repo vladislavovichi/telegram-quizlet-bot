@@ -10,13 +10,18 @@ from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
 
-from app.filters.online_mode import OnlineJoinPending, OnlineAnswerPending
+from app.filters.online_mode import (
+    OnlineJoinPending,
+    OnlineAnswerPending,
+    OnlineSettingsPending,
+)
 from app.keyboards.online_mode import (
     online_collections_kb,
     online_join_cancel_kb,
     online_player_kb,
     online_room_owner_kb,
     online_root_kb,
+    online_settings_cancel_kb,
 )
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.models.online_room import MAX_PLAYERS_PER_ROOM, OnlineRoom
@@ -26,6 +31,8 @@ from app.services.online_mode import (
     run_room_loop,
     set_online_join_pending,
     update_owner_room_message,
+    set_online_settings_pending,
+    clear_online_settings_pending,
 )
 from app.services.redis_kv import RedisKV
 from app.texts.solo_mode import fmt_choose_collection
@@ -112,6 +119,15 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         )
         await cb.answer()
 
+    @router.callback_query(F.data == "online:choose_cancel")
+    async def cb_online_choose_cancel(cb: types.CallbackQuery) -> None:
+        try:
+            await cb.message.edit_text("Выбор коллекции отменён.")
+        except Exception:
+            await cb.answer("Выбор коллекции отменён.")
+        else:
+            await cb.answer()
+
     @router.callback_query(F.data.startswith("online:col:"))
     async def cb_choose_collection(cb: types.CallbackQuery) -> None:
         parts = cb.data.split(":")
@@ -127,6 +143,8 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             await cb.answer("В коллекции пока нет карточек.", show_alert=True)
             return
 
+        deep_link: str | None = None
+
         room = await OnlineRoom.create(
             redis_kv,
             owner_id=cb.from_user.id,
@@ -139,13 +157,19 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
 
         title = await gd.get_collection_title_by_id(collection_id) or "Коллекция"
 
-        deep_link: str | None = None
         try:
             me = await cb.bot.get_me()
             if me.username:
                 deep_link = f"https://t.me/{me.username}?start=online_{room.room_id}"
         except Exception as e:  # pragma: no cover
             log.debug("failed to get bot username for deep link: %s", e)
+
+        room = await OnlineRoom.set_room_deep_link(
+            redis_kv,
+            room_id=room.room_id,
+            deep_link=deep_link,
+            ttl=redis_kv.ttl_seconds,
+        )
 
         sent = await cb.message.answer(
             fmt_room_waiting(
@@ -154,7 +178,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
                 seconds_per_question=room.seconds_per_question,
                 points_per_correct=room.points_per_correct,
                 players_count=len(room.players),
-                deep_link=deep_link,
+                deep_link=room.deep_link,
             ),
             reply_markup=online_room_owner_kb(room.room_id),
         )
@@ -271,7 +295,9 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             return
 
         room.state = "running"
-        room.started_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        room.started_at = (
+            datetime.now(datetime.timezone.utc).isoformat(timespec="seconds") + "Z"
+        )
         room.index = 0
         room.answered_user_ids = []
         await room.save(redis_kv, ttl=ttl)
@@ -284,6 +310,56 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         asyncio.create_task(
             run_room_loop(room.room_id, async_session_maker, redis_kv, cb.bot)
         )
+
+    @router.callback_query(F.data.startswith("online:set_points:"))
+    async def cb_set_points(cb: types.CallbackQuery) -> None:
+        room_id = cb.data.split(":")[2]
+        room = await OnlineRoom.load_by_room_id(redis_kv, room_id)
+        if not room or room.owner_id != cb.from_user.id or room.state != "waiting":
+            await cb.answer("Комната не найдена или уже запущена.", show_alert=True)
+            return
+
+        await set_online_settings_pending(
+            redis_kv,
+            cb.from_user.id,
+            room_id=room_id,
+            field="points",
+        )
+
+        await cb.message.edit_text(
+            "Пришли количество баллов за правильный ответ (целое положительное число).",
+            reply_markup=online_settings_cancel_kb(room_id),
+        )
+        await cb.answer()
+
+    @router.callback_query(F.data.startswith("online:set_time:"))
+    async def cb_set_time(cb: types.CallbackQuery) -> None:
+        room_id = cb.data.split(":")[2]
+        room = await OnlineRoom.load_by_room_id(redis_kv, room_id)
+        if not room or room.owner_id != cb.from_user.id or room.state != "waiting":
+            await cb.answer("Комната не найдена или уже запущена.", show_alert=True)
+            return
+
+        await set_online_settings_pending(
+            redis_kv,
+            cb.from_user.id,
+            room_id=room_id,
+            field="seconds",
+        )
+
+        await cb.message.edit_text(
+            "Пришли время на ответ в секундах (целое положительное число).",
+            reply_markup=online_settings_cancel_kb(room_id),
+        )
+        await cb.answer()
+
+    @router.callback_query(F.data.startswith("online:settings_cancel:"))
+    async def cb_settings_cancel(cb: types.CallbackQuery) -> None:
+        room_id = cb.data.split(":")[2]
+        await clear_online_settings_pending(redis_kv, cb.from_user.id)
+
+        await update_owner_room_message(async_session_maker, redis_kv, cb.bot, room_id)
+        await cb.answer("Изменение настроек отменено.")
 
     @router.message(F.text.regexp(r"^/start\s+online_"))
     async def cmd_start_online(message: types.Message) -> None:
@@ -437,6 +513,46 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
         await room.save(redis_kv, ttl=ttl)
 
         await message.answer("Ответ принят")
+
+    @router.message(
+        F.text & ~F.text.startswith("/"),
+        OnlineSettingsPending(redis_kv),
+    )
+    async def handle_owner_settings(
+        message: types.Message,
+        room: OnlineRoom,
+        settings_pending: dict,
+    ) -> None:
+        if not message.from_user:
+            return
+
+        text = (message.text or "").strip()
+        try:
+            value = int(text)
+        except ValueError:
+            await message.answer("Нужно целое положительное число, попробуй ещё раз.")
+            return
+
+        if value <= 0:
+            await message.answer("Число должно быть положительным, попробуй ещё раз.")
+            return
+
+        field = settings_pending.get("field")
+        if field == "points":
+            room.points_per_correct = value
+        elif field == "seconds":
+            room.seconds_per_question = value
+        else:
+            await clear_online_settings_pending(redis_kv, message.from_user.id)
+            await message.answer("Не удалось обновить настройки, попробуй ещё раз.")
+            return
+
+        await room.save(redis_kv, ttl=ttl)
+        await clear_online_settings_pending(redis_kv, message.from_user.id)
+
+        await update_owner_room_message(
+            async_session_maker, redis_kv, message.bot, room.room_id
+        )
 
     router.priority = 0
     return router

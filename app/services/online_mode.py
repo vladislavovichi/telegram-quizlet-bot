@@ -23,6 +23,7 @@ from app.keyboards.online_mode import online_room_owner_kb
 log = logging.getLogger(__name__)
 
 ONLINE_JOIN_PENDING_VERSION = 1
+ONLINE_SETTINGS_PENDING_VERSION = 1
 
 
 def online_join_pending_key(redis_kv: RedisKV, user_id: int) -> str:
@@ -57,6 +58,47 @@ async def clear_online_join_pending(redis_kv: RedisKV, user_id: int) -> None:
     await redis_kv.delete(online_join_pending_key(redis_kv, user_id))
 
 
+def online_settings_pending_key(redis_kv: RedisKV, user_id: int) -> str:
+    return redis_kv._key("online", "settings_pending", user_id)
+
+
+async def set_online_settings_pending(
+    redis_kv: RedisKV,
+    user_id: int,
+    room_id: str,
+    field: str,  # "points" | "seconds"
+) -> None:
+    key = online_settings_pending_key(redis_kv, user_id)
+    payload = {
+        "version": ONLINE_SETTINGS_PENDING_VERSION,
+        "kind": "online_settings",
+        "room_id": room_id,
+        "field": field,
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    await redis_kv.set_json(key, payload, ex=redis_kv.ttl_seconds)
+
+
+async def get_online_settings_pending(
+    redis_kv: RedisKV, user_id: int
+) -> Optional[dict]:
+    key = online_settings_pending_key(redis_kv, user_id)
+    data = await redis_kv.get_json(key)
+    if not data:
+        return None
+    if (
+        data.get("kind") != "online_settings"
+        or data.get("version") != ONLINE_SETTINGS_PENDING_VERSION
+    ):
+        await redis_kv.delete(key)
+        return None
+    return data
+
+
+async def clear_online_settings_pending(redis_kv: RedisKV, user_id: int) -> None:
+    await redis_kv.delete(online_settings_pending_key(redis_kv, user_id))
+
+
 async def update_owner_room_message(
     async_session_maker,
     redis_kv: RedisKV,
@@ -73,6 +115,8 @@ async def update_owner_room_message(
     gd = SoloData(async_session_maker)
     title = await gd.get_collection_title_by_id(room.collection_id) or "Коллекция"
 
+    deep_link = room.deep_link
+
     try:
         await bot.edit_message_text(
             fmt_room_waiting(
@@ -81,7 +125,7 @@ async def update_owner_room_message(
                 seconds_per_question=room.seconds_per_question,
                 points_per_correct=room.points_per_correct,
                 players_count=len(room.players),
-                deep_link=None,
+                deep_link=deep_link,
             ),
             chat_id=room.owner_wait_chat_id,
             message_id=room.owner_wait_message_id,
