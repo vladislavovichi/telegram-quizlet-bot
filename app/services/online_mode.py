@@ -342,4 +342,3 @@ async def _finish_room(
         await OnlineRoom.clear_user_room(redis_kv, p.user_id)
 
     await redis_kv.delete(OnlineRoom._room_key(redis_kv, room.room_id))
-    

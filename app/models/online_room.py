@@ -228,7 +228,7 @@ class OnlineRoom:
         seconds_per_question: int,
         points_per_correct: int,
         ttl: int | None = None,
-        deep_link: str | None = None
+        deep_link: str | None = None,
     ) -> "OnlineRoom":
         order = list(item_ids)
         rnd = random.Random()
@@ -263,7 +263,7 @@ class OnlineRoom:
             if not exists:
                 return code
         return f"{int(time.time()) % 1_000_000:06d}"
-    
+
     @classmethod
     async def set_room_deep_link(
         cls,
@@ -275,7 +275,7 @@ class OnlineRoom:
         room = await cls.load_by_room_id(redis_kv, room_id)
         if not room:
             return
-        
+
         room.deep_link = deep_link
         await room.save(redis_kv, ttl=ttl)
         return room

@@ -55,7 +55,6 @@ def online_room_owner_kb(room_id: str) -> InlineKeyboardMarkup:
     return b.as_markup()
 
 
-
 def online_player_kb(room_id: str) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     b.button(text="🚪 Выйти из комнаты", callback_data=f"online:leave:{room_id}")
@@ -68,6 +67,7 @@ def online_join_cancel_kb() -> InlineKeyboardMarkup:
     b.button(text="❌ Отмена", callback_data="online:join_cancel")
     b.adjust(1)
     return b.as_markup()
+
 
 def online_settings_cancel_kb(room_id: str) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()

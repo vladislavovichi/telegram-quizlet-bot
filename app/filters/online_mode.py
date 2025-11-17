@@ -6,7 +6,10 @@ from aiogram.filters import BaseFilter
 from aiogram import types
 
 from app.services.redis_kv import RedisKV
-from app.services.online_mode import get_online_join_pending, get_online_settings_pending
+from app.services.online_mode import (
+    get_online_join_pending,
+    get_online_settings_pending,
+)
 
 from app.models.online_room import OnlineRoom
 import time
@@ -53,6 +56,7 @@ class OnlineAnswerPending(BaseFilter):
             return False
 
         return {"room": room}
+
 
 class OnlineSettingsPending(BaseFilter):
     def __init__(self, redis_kv: RedisKV):

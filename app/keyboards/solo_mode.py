@@ -29,9 +29,9 @@ def solo_collections_kb(collections: Sequence, page: int = 0) -> InlineKeyboardM
         if page < pages - 1:
             nav.button(text="➡️", callback_data=f"solo:page:{page+1}")
         b.row(*nav.buttons)
-            
+
     b.button(text="❌ Отмена", callback_data="solo:choose_cancel")
-    
+
     b.adjust(1)
     return b.as_markup()
 
