@@ -1,5 +1,6 @@
 from __future__ import annotations
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def back_to_item_kb(item_id: int) -> InlineKeyboardMarkup:

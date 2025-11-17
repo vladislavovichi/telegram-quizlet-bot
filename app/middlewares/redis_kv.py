@@ -1,5 +1,7 @@
-from typing import Any, Callable, Dict, Awaitable
+from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware, types
+
 from app.services.redis_kv import RedisKV
 
 

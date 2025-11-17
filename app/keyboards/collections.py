@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Sequence, List
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from typing import List, Sequence
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 PAGE_SIZE_COLLECTIONS = 4

@@ -1,9 +1,9 @@
 # app/models/solo_mode.py
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional
 import time
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass(slots=True)

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, Dict, Iterable
-from datetime import datetime
-from contextlib import asynccontextmanager
 import secrets
 import time
+from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from sqlalchemy import select
 
-from app.services.redis_kv import RedisKV
-from app.services.db import get_session
 from app.models.collection import Collection, CollectionItem
 from app.models.solo_mode import SoloSession
+from app.services.db import get_session
+from app.services.redis_kv import RedisKV
 
 
 class SoloData:

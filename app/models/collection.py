@@ -1,16 +1,16 @@
 from sqlalchemy import (
     Column,
+    DateTime,
+    ForeignKey,
+    Index,
     Integer,
     String,
-    DateTime,
     Text,
-    ForeignKey,
-    func,
-    Index,
     UniqueConstraint,
+    func,
 )
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import backref, relationship
 
 from .base import Base
 

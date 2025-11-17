@@ -1,7 +1,11 @@
 from __future__ import annotations
+
 from typing import Optional
+
 from sqlalchemy import select
+
 from app.models.user import User
+
 from .base import Repo
 
 
