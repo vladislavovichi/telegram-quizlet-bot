@@ -176,7 +176,7 @@ async def start_new_solo_session(
         order=order,
         index=0,
         showing_answer=False,
-        started_at=datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        started_at=datetime.now(datetime.timezone.utc).isoformat(timespec="seconds") + "Z",
         seed=seed,
         stats={},
         per_item_sec={},
