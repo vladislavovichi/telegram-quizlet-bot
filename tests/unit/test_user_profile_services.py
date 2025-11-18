@@ -3,12 +3,9 @@ import pytest
 
 from app.models.collection import Collection, CollectionItem
 from app.models.user import User
-from app.services.user_profile import (
-    UserProfileData,
-    ensure_user_exists,
-    load_profile,
-    update_name_and_get_profile,
-)
+from app.services.user_profile import (UserProfileData, ensure_user_exists,
+                                       load_profile,
+                                       update_name_and_get_profile)
 
 
 @pytest.mark.asyncio

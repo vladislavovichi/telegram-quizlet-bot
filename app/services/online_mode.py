@@ -11,14 +11,9 @@ from app.models.online_room import OnlineRoom
 from app.repos.base import with_repos
 from app.services.redis_kv import RedisKV
 from app.services.solo_mode import SoloData
-from app.texts.online_mode import (
-    fmt_online_answer,
-    fmt_online_question,
-    fmt_owner_scoreboard,
-    fmt_player_scoreboard,
-    fmt_room_waiting,
-    format_top_lines,
-)
+from app.texts.online_mode import (fmt_online_answer, fmt_online_question,
+                                   fmt_owner_scoreboard, fmt_player_scoreboard,
+                                   fmt_room_waiting, format_top_lines)
 
 log = logging.getLogger(__name__)
 

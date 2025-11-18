@@ -1,13 +1,8 @@
 
 import pytest
 
-from app.services.importers import (
-    _dedup_key,
-    _detect_kind,
-    _normalize_text,
-    parse_collections_file,
-    parse_items_file,
-)
+from app.services.importers import (_dedup_key, _detect_kind, _normalize_text,
+                                    parse_collections_file, parse_items_file)
 
 
 def test_normalize_text():

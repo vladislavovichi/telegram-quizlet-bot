@@ -1,20 +1,17 @@
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Dict, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 import pytest
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker as _async_sessionmaker,
-    create_async_engine,
-)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker as _async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.models import Base
 from app.services.redis_kv import RedisKV
-
 
 # ---------- event loop (pytest-asyncio >= 0.21) ----------
 

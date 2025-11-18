@@ -1,14 +1,12 @@
 
 import pytest
 
-from app.services.online_mode import (
-    clear_online_settings_pending,
-    get_online_settings_pending,
-    online_join_pending_key,
-    online_settings_pending_key,
-    set_online_join_pending,
-    set_online_settings_pending,
-)
+from app.services.online_mode import (clear_online_settings_pending,
+                                      get_online_settings_pending,
+                                      online_join_pending_key,
+                                      online_settings_pending_key,
+                                      set_online_join_pending,
+                                      set_online_settings_pending)
 
 
 @pytest.mark.asyncio

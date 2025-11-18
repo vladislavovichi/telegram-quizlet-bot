@@ -5,13 +5,9 @@ from app.models.collection import Collection, CollectionItem
 from app.models.solo_mode import SoloSession
 from app.models.user import User
 from app.services.redis_kv import RedisKV
-from app.services.solo_mode import (
-    SoloData,
-    drop_solo_session,
-    load_solo_session,
-    save_solo_session,
-    start_new_solo_session,
-)
+from app.services.solo_mode import (SoloData, drop_solo_session,
+                                    load_solo_session, save_solo_session,
+                                    start_new_solo_session)
 
 
 @pytest.mark.asyncio

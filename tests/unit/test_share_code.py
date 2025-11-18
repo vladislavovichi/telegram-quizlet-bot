@@ -1,7 +1,8 @@
 
 import pytest
 
-from app.services.share_code import _b64d, _b64e, make_share_code, parse_share_code
+from app.services.share_code import (_b64d, _b64e, make_share_code,
+                                     parse_share_code)
 
 
 def test_b64_roundtrip():

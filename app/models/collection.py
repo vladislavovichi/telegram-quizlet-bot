@@ -1,14 +1,5 @@
-from sqlalchemy import (
-    Column,
-    DateTime,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-    func,
-)
+from sqlalchemy import (Column, DateTime, ForeignKey, Index, Integer, String,
+                        Text, UniqueConstraint, func)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import backref, relationship
 

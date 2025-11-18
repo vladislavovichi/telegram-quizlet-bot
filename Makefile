@@ -66,4 +66,4 @@ lint: ## Линтеры (ruff по умолчанию)
 	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "ruff check ."
 
 format: ## Форматирование кода (black)
-	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "black ."
+	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "black . && isort ."
