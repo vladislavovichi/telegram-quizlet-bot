@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.11]
+        python-version: [3.12]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,9 +44,9 @@ jobs:
       - name: Check for tests
         id: find_tests
         run: |
-          shopt -s nullglob || true
+          shopt -s nullglob globstar || true
           count=0
-          for f in tests/test_*.py; do
+          for f in tests/**/test_*.py; do
             count=$((count+1))
           done
           if [ "$count" -gt 0 ]; then
