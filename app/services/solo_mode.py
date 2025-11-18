@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from sqlalchemy import select
@@ -176,7 +176,8 @@ async def start_new_solo_session(
         order=order,
         index=0,
         showing_answer=False,
-        started_at=datetime.now(datetime.timezone.utc).isoformat(timespec="seconds") + "Z",
+        started_at=datetime.now(timezone.utc).isoformat(timespec="seconds")
+        + "Z",
         seed=seed,
         stats={},
         per_item_sec={},
