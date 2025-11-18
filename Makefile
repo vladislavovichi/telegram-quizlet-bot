@@ -60,7 +60,7 @@ migrate-status: ## Показать текущее состояние мигра
 	$(COMPOSE) run --rm $(APP_SERVICE) alembic current
 
 test: ## Запуск тестов внутри app-контейнера
-	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "pytest -q"
+	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "pytest"
 
 lint: ## Линтеры (ruff по умолчанию)
 	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "ruff check ."
