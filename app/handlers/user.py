@@ -4,11 +4,13 @@ from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart
 
 from app.filters.pending import HasProfilePendingAction
-from app.keyboards.user import (main_reply_kb, profile_cancel_kb,
-                                profile_inline_kb)
+from app.keyboards.user import main_reply_kb, profile_cancel_kb, profile_inline_kb
 from app.services.redis_kv import RedisKV
-from app.services.user_profile import (ensure_user_exists, load_profile,
-                                       update_name_and_get_profile)
+from app.services.user_profile import (
+    ensure_user_exists,
+    load_profile,
+    update_name_and_get_profile,
+)
 from app.texts.user_profile import make_profile_text
 
 

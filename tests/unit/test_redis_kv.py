@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.services.redis_kv import RedisKV

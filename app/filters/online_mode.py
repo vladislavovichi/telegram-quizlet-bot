@@ -7,8 +7,10 @@ from aiogram import types
 from aiogram.filters import BaseFilter
 
 from app.models.online_room import OnlineRoom
-from app.services.online_mode import (get_online_join_pending,
-                                      get_online_settings_pending)
+from app.services.online_mode import (
+    get_online_join_pending,
+    get_online_settings_pending,
+)
 from app.services.redis_kv import RedisKV
 
 

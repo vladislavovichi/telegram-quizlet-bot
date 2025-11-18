@@ -1,7 +1,6 @@
-
 import asyncio
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Dict
+from typing import AsyncGenerator, Dict
 
 import pytest
 from sqlalchemy.dialects.postgresql import JSONB
@@ -15,6 +14,7 @@ from app.services.redis_kv import RedisKV
 
 # ---------- event loop (pytest-asyncio >= 0.21) ----------
 
+
 @pytest.fixture(scope="session")
 def event_loop() -> asyncio.AbstractEventLoop:
     """
@@ -26,6 +26,7 @@ def event_loop() -> asyncio.AbstractEventLoop:
 
 
 # ---------- FakeRedis used both in unit tests and when patching create_app() ----------
+
 
 @dataclass
 class FakeRedis:
@@ -66,6 +67,7 @@ def redis_kv(fake_redis: FakeRedis) -> RedisKV:
 
 
 # ---------- database fixtures (SQLite in-memory, JSONB patched to JSON) ----------
+
 
 @pytest.fixture(scope="session")
 async def _engine():
@@ -108,7 +110,9 @@ async def async_session_maker(_engine) -> _async_sessionmaker[AsyncSession]:
 
 
 @pytest.fixture
-async def db_session(async_session_maker: _async_sessionmaker[AsyncSession]) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(
+    async_session_maker: _async_sessionmaker[AsyncSession],
+) -> AsyncGenerator[AsyncSession, None]:
     """
     Function-scoped session. We don't open nested transactions here to keep
     things simple; tests are free to commit/rollback as they like.
@@ -118,6 +122,7 @@ async def db_session(async_session_maker: _async_sessionmaker[AsyncSession]) -> 
 
 
 # ---------- infra patching for create_app() / main() ----------
+
 
 @pytest.fixture
 def patch_app_infra(monkeypatch, _engine, async_session_maker, fake_redis: FakeRedis):
@@ -139,11 +144,14 @@ def patch_app_infra(monkeypatch, _engine, async_session_maker, fake_redis: FakeR
         # Ignore DSN and reuse a single FakeRedis instance
         return fake_redis
 
-    monkeypatch.setattr(db_module, "make_engine_and_session", fake_make_engine_and_session)
+    monkeypatch.setattr(
+        db_module, "make_engine_and_session", fake_make_engine_and_session
+    )
     monkeypatch.setattr(redis_module, "create_redis", fake_create_redis)
 
 
 # ---------- aiogram network patching (no real Telegram calls) ----------
+
 
 @pytest.fixture
 def patch_aiogram_network(monkeypatch):

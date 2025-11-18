@@ -1,11 +1,13 @@
-
 import pytest
 
 from app.models.collection import Collection, CollectionItem
 from app.models.user import User
-from app.services.user_profile import (UserProfileData, ensure_user_exists,
-                                       load_profile,
-                                       update_name_and_get_profile)
+from app.services.user_profile import (
+    UserProfileData,
+    ensure_user_exists,
+    load_profile,
+    update_name_and_get_profile,
+)
 
 
 @pytest.mark.asyncio
@@ -33,9 +35,15 @@ async def test_load_profile_counts(async_session_maker):
         await session.flush()
 
         items = [
-            CollectionItem(collection_id=col1.id, question="Q1", answer="A1", position=1),
-            CollectionItem(collection_id=col2.id, question="Q2", answer="A2", position=1),
-            CollectionItem(collection_id=col2.id, question="Q3", answer="A3", position=2),
+            CollectionItem(
+                collection_id=col1.id, question="Q1", answer="A1", position=1
+            ),
+            CollectionItem(
+                collection_id=col2.id, question="Q2", answer="A2", position=1
+            ),
+            CollectionItem(
+                collection_id=col2.id, question="Q3", answer="A3", position=2
+            ),
         ]
         session.add_all(items)
         await session.commit()

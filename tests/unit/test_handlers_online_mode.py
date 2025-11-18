@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.handlers.online_mode import get_online_mode_router
@@ -50,7 +49,9 @@ def _get_callback_handler(router, name: str):
 
 
 @pytest.mark.asyncio
-async def test_cmd_online_start_clears_pending_and_shows_root(async_session_maker, redis_kv):
+async def test_cmd_online_start_clears_pending_and_shows_root(
+    async_session_maker, redis_kv
+):
     router = get_online_mode_router(async_session_maker, redis_kv)
     handler = _get_message_handler(router, "cmd_online_start")
 

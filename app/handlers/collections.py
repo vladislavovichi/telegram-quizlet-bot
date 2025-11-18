@@ -9,13 +9,17 @@ from aiogram.types import BufferedInputFile
 
 from app.config import settings
 from app.filters.pending import HasCollectionsPendingAction
-from app.keyboards.collections import (collection_clear_confirm_kb,
-                                       collection_delete_confirm_kb,
-                                       collection_deleted_kb,
-                                       collection_edit_kb, collection_menu_kb,
-                                       collections_root_kb,
-                                       item_delete_confirm_kb, item_view_kb,
-                                       items_page_kb)
+from app.keyboards.collections import (
+    collection_clear_confirm_kb,
+    collection_delete_confirm_kb,
+    collection_deleted_kb,
+    collection_edit_kb,
+    collection_menu_kb,
+    collections_root_kb,
+    item_delete_confirm_kb,
+    item_view_kb,
+    items_page_kb,
+)
 from app.keyboards.user import main_reply_kb
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.repos.base import with_repos

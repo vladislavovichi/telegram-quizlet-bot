@@ -1,12 +1,13 @@
-
 import pytest
 
-from app.services.online_mode import (clear_online_settings_pending,
-                                      get_online_settings_pending,
-                                      online_join_pending_key,
-                                      online_settings_pending_key,
-                                      set_online_join_pending,
-                                      set_online_settings_pending)
+from app.services.online_mode import (
+    clear_online_settings_pending,
+    get_online_settings_pending,
+    online_join_pending_key,
+    online_settings_pending_key,
+    set_online_join_pending,
+    set_online_settings_pending,
+)
 
 
 @pytest.mark.asyncio
@@ -26,7 +27,9 @@ async def test_online_settings_pending(redis_kv):
     key = online_settings_pending_key(redis_kv, user_id=2)
     assert key.endswith("online:settings_pending:2")
 
-    await set_online_settings_pending(redis_kv, user_id=2, room_id="123456", field="points")
+    await set_online_settings_pending(
+        redis_kv, user_id=2, room_id="123456", field="points"
+    )
     data = await get_online_settings_pending(redis_kv, user_id=2)
     assert data is not None
     assert data["room_id"] == "123456"

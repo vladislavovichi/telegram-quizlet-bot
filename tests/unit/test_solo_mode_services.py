@@ -1,13 +1,16 @@
-
 import pytest
 
 from app.models.collection import Collection, CollectionItem
 from app.models.solo_mode import SoloSession
 from app.models.user import User
 from app.services.redis_kv import RedisKV
-from app.services.solo_mode import (SoloData, drop_solo_session,
-                                    load_solo_session, save_solo_session,
-                                    start_new_solo_session)
+from app.services.solo_mode import (
+    SoloData,
+    drop_solo_session,
+    load_solo_session,
+    save_solo_session,
+    start_new_solo_session,
+)
 
 
 @pytest.mark.asyncio
@@ -22,8 +25,12 @@ async def test_solo_data_collection_and_items(async_session_maker):
         await session.flush()
 
         items = [
-            CollectionItem(collection_id=col.id, question="Q1", answer="A1", position=1),
-            CollectionItem(collection_id=col.id, question="Q2", answer="A2", position=2),
+            CollectionItem(
+                collection_id=col.id, question="Q1", answer="A1", position=1
+            ),
+            CollectionItem(
+                collection_id=col.id, question="Q2", answer="A2", position=2
+            ),
         ]
         session.add_all(items)
         await session.commit()

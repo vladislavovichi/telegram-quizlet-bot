@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.handlers.solo_mode import get_solo_mode_router
@@ -52,7 +51,9 @@ def _get_callback_handler(router, name: str):
 
 
 @pytest.mark.asyncio
-async def test_cmd_solo_start_shows_collection_list(async_session_maker, redis_kv: RedisKV):
+async def test_cmd_solo_start_shows_collection_list(
+    async_session_maker, redis_kv: RedisKV
+):
     router = get_solo_mode_router(async_session_maker, redis_kv)
     handler = _get_message_handler(router, "cmd_solo_start")
 
@@ -64,7 +65,9 @@ async def test_cmd_solo_start_shows_collection_list(async_session_maker, redis_k
 
 
 @pytest.mark.asyncio
-async def test_cb_solo_begin_invalid_collection_id_shows_alert(async_session_maker, redis_kv: RedisKV):
+async def test_cb_solo_begin_invalid_collection_id_shows_alert(
+    async_session_maker, redis_kv: RedisKV
+):
     router = get_solo_mode_router(async_session_maker, redis_kv)
     handler = _get_callback_handler(router, "cb_solo_begin")
 
@@ -76,7 +79,9 @@ async def test_cb_solo_begin_invalid_collection_id_shows_alert(async_session_mak
 
 
 @pytest.mark.asyncio
-async def test_cb_solo_begin_empty_collection_shows_no_cards(async_session_maker, redis_kv: RedisKV):
+async def test_cb_solo_begin_empty_collection_shows_no_cards(
+    async_session_maker, redis_kv: RedisKV
+):
     router = get_solo_mode_router(async_session_maker, redis_kv)
     handler = _get_callback_handler(router, "cb_solo_begin")
 
@@ -88,7 +93,9 @@ async def test_cb_solo_begin_empty_collection_shows_no_cards(async_session_maker
 
 
 @pytest.mark.asyncio
-async def test_cb_solo_begin_success_creates_session_and_renders_question(async_session_maker, redis_kv: RedisKV):
+async def test_cb_solo_begin_success_creates_session_and_renders_question(
+    async_session_maker, redis_kv: RedisKV
+):
     from app.models.collection import Collection, CollectionItem
 
     async with async_session_maker() as session:
@@ -96,7 +103,9 @@ async def test_cb_solo_begin_success_creates_session_and_renders_question(async_
         session.add(col)
         await session.flush()
 
-        item = CollectionItem(collection_id=col.id, question="Q1", answer="A1", position=1)
+        item = CollectionItem(
+            collection_id=col.id, question="Q1", answer="A1", position=1
+        )
         session.add(item)
         await session.commit()
 

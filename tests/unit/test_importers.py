@@ -1,8 +1,12 @@
-
 import pytest
 
-from app.services.importers import (_dedup_key, _detect_kind, _normalize_text,
-                                    parse_collections_file, parse_items_file)
+from app.services.importers import (
+    _dedup_key,
+    _detect_kind,
+    _normalize_text,
+    parse_collections_file,
+    parse_items_file,
+)
 
 
 def test_normalize_text():
@@ -21,23 +25,16 @@ def test_detect_kind_csv_by_content():
 
 
 def test_parse_items_file_basic():
-    csv_bytes = (
-        "question,answer\n"
-        " Q1 , A1 \n"
-        " Q2 , A2 \n"
-        " , \n"
-    ).encode("utf-8")
+    csv_bytes = ("question,answer\n" " Q1 , A1 \n" " Q2 , A2 \n" " , \n").encode(
+        "utf-8"
+    )
 
     pairs = parse_items_file("items.csv", csv_bytes)
     assert pairs == [("Q1", "A1"), ("Q2", "A2")]
 
 
 def test_parse_items_file_deduplicates_questions():
-    csv_bytes = (
-        "question,answer\n"
-        "Q1,A1\n"
-        "Q1,A2\n"
-    ).encode("utf-8")
+    csv_bytes = ("question,answer\n" "Q1,A1\n" "Q1,A2\n").encode("utf-8")
 
     pairs = parse_items_file("items.csv", csv_bytes)
     assert pairs == [("Q1", "A1")]
@@ -64,11 +61,7 @@ def test_parse_collections_file_groups_by_title():
 
 
 def test_parse_collections_file_deduplicates_per_collection():
-    csv_bytes = (
-        "title,question,answer\n"
-        "Set,Q1,A1\n"
-        "Set,Q1,A2\n"
-    ).encode("utf-8")
+    csv_bytes = ("title,question,answer\n" "Set,Q1,A1\n" "Set,Q1,A2\n").encode("utf-8")
 
     grouped = parse_collections_file("cols.csv", csv_bytes)
     assert grouped["Set"] == [("Q1", "A1")]

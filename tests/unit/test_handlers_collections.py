@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.handlers.collections import get_collections_router

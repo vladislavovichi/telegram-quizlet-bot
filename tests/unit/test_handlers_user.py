@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.handlers.user import get_user_router
@@ -46,7 +45,9 @@ def _get_callback_handler(router, name: str):
 
 
 @pytest.mark.asyncio
-async def test_cmd_start_creates_user_and_sends_greeting(async_session_maker, redis_kv, monkeypatch):
+async def test_cmd_start_creates_user_and_sends_greeting(
+    async_session_maker, redis_kv, monkeypatch
+):
     from app.handlers import user as user_module
 
     router = get_user_router(async_session_maker, redis_kv)
@@ -68,7 +69,9 @@ async def test_cmd_start_creates_user_and_sends_greeting(async_session_maker, re
 
 
 @pytest.mark.asyncio
-async def test_cmd_profile_loads_profile_and_sends_text(async_session_maker, redis_kv, monkeypatch):
+async def test_cmd_profile_loads_profile_and_sends_text(
+    async_session_maker, redis_kv, monkeypatch
+):
     from app.handlers import user as user_module
 
     router = get_user_router(async_session_maker, redis_kv)
@@ -109,12 +112,16 @@ async def test_cb_profile_change_name_sets_pending(redis_kv, async_session_maker
 
 
 @pytest.mark.asyncio
-async def test_cb_profile_cancel_change_name_clears_pending(redis_kv, async_session_maker):
+async def test_cb_profile_cancel_change_name_clears_pending(
+    redis_kv, async_session_maker
+):
     router = get_user_router(async_session_maker, redis_kv)
     handler = _get_callback_handler(router, "cb_profile_cancel_change_name")
 
     key = redis_kv.pending_key(9)
-    await redis_kv.set_json(key, {"type": "profile:change_name"}, ex=redis_kv.ttl_seconds)
+    await redis_kv.set_json(
+        key, {"type": "profile:change_name"}, ex=redis_kv.ttl_seconds
+    )
 
     cb = DummyCallbackQuery(data="profile:cancel_change_name", user_id=9, username="u9")
     await handler(cb)
@@ -123,15 +130,18 @@ async def test_cb_profile_cancel_change_name_clears_pending(redis_kv, async_sess
 
 
 @pytest.mark.asyncio
-
-async def test_handle_profile_pending_updates_name_and_clears_state(async_session_maker, redis_kv, monkeypatch):
+async def test_handle_profile_pending_updates_name_and_clears_state(
+    async_session_maker, redis_kv, monkeypatch
+):
     from app.handlers import user as user_module
 
     router = get_user_router(async_session_maker, redis_kv)
     handler = _get_message_handler(router, "handle_profile_pending")
 
     key = redis_kv.pending_key(11)
-    await redis_kv.set_json(key, {"type": "profile:change_name"}, ex=redis_kv.ttl_seconds)
+    await redis_kv.set_json(
+        key, {"type": "profile:change_name"}, ex=redis_kv.ttl_seconds
+    )
 
     class DummyProfile:
         def __init__(self, username: str):
@@ -143,7 +153,7 @@ async def test_handle_profile_pending_updates_name_and_clears_state(async_sessio
         assert new_name == "New Name"
         return DummyProfile(new_name)
 
-    def fake_make_profile_text(tg, profile, name_override = None):
+    def fake_make_profile_text(tg, profile, name_override=None):
         return f"PROFILE {profile.user.username}"
 
     monkeypatch.setattr(user_module, "update_name_and_get_profile", fake_update)

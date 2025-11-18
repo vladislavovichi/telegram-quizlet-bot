@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.models.online_room import MAX_PLAYERS_PER_ROOM, OnlineRoom, RoomPlayer

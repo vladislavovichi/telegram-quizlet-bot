@@ -1,4 +1,3 @@
-
 import pytest
 
 import main as main_module
@@ -25,7 +24,9 @@ async def test_create_app_smoke(patch_aiogram_network, patch_app_infra):
 
 
 @pytest.mark.asyncio
-async def test_main_starts_polling_and_closes_resources(monkeypatch, patch_aiogram_network, patch_app_infra):
+async def test_main_starts_polling_and_closes_resources(
+    monkeypatch, patch_aiogram_network, patch_app_infra
+):
     called = {"start_polling": False}
 
     try:

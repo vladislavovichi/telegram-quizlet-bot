@@ -8,16 +8,27 @@ from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
 
-from app.keyboards.solo_mode import (solo_collections_kb, solo_controls_kb,
-                                     solo_finished_kb)
+from app.keyboards.solo_mode import (
+    solo_collections_kb,
+    solo_controls_kb,
+    solo_finished_kb,
+)
 from app.models.solo_mode import SoloSession
 from app.services.collections_facade import get_user_and_collections
 from app.services.hints import generate_hint_async
 from app.services.redis_kv import RedisKV
-from app.services.solo_mode import (SoloData, load_solo_session,
-                                    save_solo_session, start_new_solo_session)
-from app.texts.solo_mode import (fmt_answer, fmt_choose_collection,
-                                 fmt_finished_summary, fmt_question)
+from app.services.solo_mode import (
+    SoloData,
+    load_solo_session,
+    save_solo_session,
+    start_new_solo_session,
+)
+from app.texts.solo_mode import (
+    fmt_answer,
+    fmt_choose_collection,
+    fmt_finished_summary,
+    fmt_question,
+)
 
 log = logging.getLogger(__name__)
 

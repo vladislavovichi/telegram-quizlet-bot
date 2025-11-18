@@ -10,24 +10,33 @@ from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile
 
-from app.filters.online_mode import (OnlineAnswerPending, OnlineJoinPending,
-                                     OnlineSettingsPending)
-from app.keyboards.online_mode import (online_collections_kb,
-                                       online_join_cancel_kb, online_player_kb,
-                                       online_room_owner_kb, online_root_kb,
-                                       online_settings_cancel_kb)
+from app.filters.online_mode import (
+    OnlineAnswerPending,
+    OnlineJoinPending,
+    OnlineSettingsPending,
+)
+from app.keyboards.online_mode import (
+    online_collections_kb,
+    online_join_cancel_kb,
+    online_player_kb,
+    online_room_owner_kb,
+    online_root_kb,
+    online_settings_cancel_kb,
+)
 from app.middlewares.redis_kv import RedisKVMiddleware
 from app.models.online_room import MAX_PLAYERS_PER_ROOM, OnlineRoom
 from app.services.collections_facade import get_user_and_collections
-from app.services.online_mode import (clear_online_join_pending,
-                                      clear_online_settings_pending,
-                                      run_room_loop, set_online_join_pending,
-                                      set_online_settings_pending,
-                                      update_owner_room_message)
+from app.services.online_mode import (
+    clear_online_join_pending,
+    clear_online_settings_pending,
+    run_room_loop,
+    set_online_join_pending,
+    set_online_settings_pending,
+    update_owner_room_message,
+)
 from app.services.redis_kv import RedisKV
 from app.services.solo_mode import SoloData
-from app.texts.online_mode import (fmt_online_root, fmt_player_waiting,
-                                   fmt_room_waiting)
+from app.texts.online_mode import fmt_online_root, fmt_player_waiting, fmt_room_waiting
 from app.texts.solo_mode import fmt_choose_collection
 
 log = logging.getLogger(__name__)
