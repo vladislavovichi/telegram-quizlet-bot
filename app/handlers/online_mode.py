@@ -4,7 +4,7 @@ import asyncio
 import io
 import logging
 import time as pytime
-from datetime import datetime
+from datetime import datetime, timezone
 
 from aiogram import F, Router, types
 from aiogram.filters import Command
@@ -292,7 +292,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
 
         room.state = "running"
         room.started_at = (
-            datetime.now(datetime.timezone.utc).isoformat(timespec="seconds") + "Z"
+            datetime.now(timezone.utc).isoformat(timespec="seconds") + "Z"
         )
         room.index = 0
         room.answered_user_ids = []
