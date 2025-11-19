@@ -19,6 +19,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     yield loop
     loop.close()
 
+
 @dataclass
 class FakeRedis:
     data: Dict[str, bytes]
@@ -86,6 +87,7 @@ async def db_session(
     async with async_session_maker() as session:
         yield session
 
+
 @pytest.fixture
 def patch_app_infra(monkeypatch, _engine, async_session_maker, fake_redis: FakeRedis):
     from app.services import db as db_module  # type: ignore
@@ -101,6 +103,7 @@ def patch_app_infra(monkeypatch, _engine, async_session_maker, fake_redis: FakeR
         db_module, "make_engine_and_session", fake_make_engine_and_session
     )
     monkeypatch.setattr(redis_module, "create_redis", fake_create_redis)
+
 
 @pytest.fixture
 def patch_aiogram_network(monkeypatch):
