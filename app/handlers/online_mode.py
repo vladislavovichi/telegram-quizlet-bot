@@ -291,9 +291,7 @@ def get_online_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             return
 
         room.state = "running"
-        room.started_at = (
-            datetime.now(timezone.utc).isoformat(timespec="seconds") + "Z"
-        )
+        room.started_at = datetime.now(timezone.utc).isoformat(timespec="seconds") + "Z"
         room.index = 0
         room.answered_user_ids = []
         await room.save(redis_kv, ttl=ttl)
