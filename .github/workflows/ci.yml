@@ -59,4 +59,4 @@ jobs:
         if: steps.find_tests.outputs.tests == 'true'
         run: |
           python -m pip install pytest
-          pytest -q
+          pytest -q -c config/pytest.ini

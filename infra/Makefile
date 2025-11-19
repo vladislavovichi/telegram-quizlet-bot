@@ -39,28 +39,28 @@ shell: ## Открыть bash внутри app-контейнера
 	$(COMPOSE) exec $(APP_SERVICE) bash
 
 migrate-head: ## Alembic: upgrade до head
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic upgrade head
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini upgrade head
 
 migrate-tail: ## Alembic: downgrade до base (самый первый)
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic downgrade base
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini downgrade base
 
 migrate-up: ## Alembic: upgrade на 1 шаг
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic upgrade +1
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini upgrade +1
 
 migrate-down: ## Alembic: downgrade на 1 шаг
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic downgrade -1
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini downgrade -1
 
 migrate-up-%: ## Alembic: upgrade на N шагов (make migrate-up-2)
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic upgrade +$*
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini upgrade +$*
 
 migrate-down-%: ## Alembic: downgrade на N шагов (make migrate-down-3)
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic downgrade -$*
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini downgrade -$*
 
 migrate-status: ## Показать текущее состояние миграций
-	$(COMPOSE) run --rm $(APP_SERVICE) alembic current
+	$(COMPOSE) run --rm $(APP_SERVICE) alembic -c config/alembic.ini current
 
 test: ## Запуск тестов внутри app-контейнера
-	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "pytest"
+	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "pytest -c config/pytest.ini"
 
 lint: ## Линтеры (ruff по умолчанию)
 	$(COMPOSE) run --rm $(APP_SERVICE) sh -c "ruff check ."
