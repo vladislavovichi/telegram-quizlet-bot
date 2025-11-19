@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     REDIS_TTL_SEC: int = 900
 
     model_config = {
-        "env_file": ".env",
+        "env_file": "config/.env",
         "env_file_encoding": "utf-8",
         "extra": "ignore",
     }

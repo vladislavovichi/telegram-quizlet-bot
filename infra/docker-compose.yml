@@ -31,10 +31,12 @@ services:
       retries: 10
 
   app:
-    build: .
+    build: 
+      context: ..
+      dockerfile: infra/Dockerfile
     container_name: telegram_quizlet_app
     env_file:
-      - .env  
+      - ../config/.env
     depends_on:
       db:
         condition: service_healthy
