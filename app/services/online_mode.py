@@ -288,7 +288,7 @@ async def _finish_room(
     room: OnlineRoom,
 ) -> None:
     room.state = "finished"
-    room.finished_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    room.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds") + "Z"
     await room.save(redis_kv, ttl=redis_kv.ttl_seconds)
 
     title = await gd.get_collection_title_by_id(room.collection_id) or "Коллекция"
