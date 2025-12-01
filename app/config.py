@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     REDIS_DSN: str = "redis://localhost:6379/0"
     REDIS_PREFIX: str = "tgbot"
     REDIS_TTL_SEC: int = 900
+    NEURALNET_URL: str = "http://neuralnet:8000"
+    HINT_ENDPOINT: str = f"{NEURALNET_URL}/neuralnet/model"
 
     model_config = {
         "env_file": "config/.env",

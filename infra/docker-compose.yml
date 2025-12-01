@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: telegram_quizlet_bot
       POSTGRES_PASSWORD: telegram_quizlet_bot
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -21,7 +21,7 @@ services:
     container_name: telegram_quizlet_redis
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -29,6 +29,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  neuralnet:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.neural
+    container_name: telegram_quizlet_neuralnet
+    env_file:
+      - ../config/.env
+    volumes:
+      - ../models:/models
+      - ../hf_cache:/cache/huggingface
+      - ../torch_cache:/cache/torch
+      - ../torch_kernels:/cache/torch_kernels
 
   app:
     build: 
@@ -42,6 +55,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      neuralnet:
+        condition: service_started
     command: >
       python main.py
 
