@@ -28,5 +28,7 @@ async def _request_hint(question: str, prev_hints: List[str]) -> str:
         return ""
 
 
-async def generate_hint_async(question: str, prev_hints: List[str] | None = None) -> str:
+async def generate_hint_async(
+    question: str, prev_hints: List[str] | None = None
+) -> str:
     return await _request_hint(question, prev_hints or [])
