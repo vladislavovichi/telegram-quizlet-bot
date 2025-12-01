@@ -12,10 +12,11 @@ WORKDIR /app
 
 COPY pyproject.toml ./
 
-RUN python -c "import tomllib; from pathlib import Path; data = tomllib.loads(Path('pyproject.toml').read_text('utf-8')); proj_deps = data.get('project', {}).get('dependencies', []); neural = data.get('neural_reqs', []); deps = proj_deps + neural; Path('/tmp/requirements.txt').write_text('\n'.join(deps))" > /tmp/requirements.txt
+RUN python -c "import tomllib; from pathlib import Path; data = tomllib.loads(Path('pyproject.toml').read_text('utf-8')); proj_deps = data.get('project', {}).get('dependencies', []); neural_deps = data.get('project', {}).get('neural_dependencies', []); deps = proj_deps + neural_deps; Path('/tmp/neural_requirements.txt').write_text('\n'.join(deps))"
+RUN cat /tmp/neural_requirements.txt
 
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install -r /tmp/requirements.txt
+    pip install -r /tmp/neural_requirements.txt
 
 COPY . .
 
