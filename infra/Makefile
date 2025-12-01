@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 APP_SERVICE ?= app
 NEURAL_SERVICE ?= neuralnet
 
-.PHONY: help full build build-app build-neural \
+.PHONY: help full build build-no-cache build-app build-neural \
         up up-app up-neural down stop stop-app stop-neural \
         restart restart-app restart-neural \
         logs logs-app neural-logs ps shell neural-shell \
@@ -21,6 +21,9 @@ full: build migrate-head up ## Собрать образы и поднять в�
 
 build: ## Собрать docker-образы всех сервисов с build:
 	$(COMPOSE) build
+
+build-no-cache: ## Собрать docker-образы всех сервисов с build без кеша:
+	$(COMPOSE) build --no-cache
 
 build-app: ## Собрать образ только для app-сервиса
 	$(COMPOSE) build $(APP_SERVICE)

@@ -23,7 +23,7 @@ COPY . .
 ENV HF_HOME=/cache/huggingface \
     TORCH_HOME=/cache/torch \
     TORCH_KERNEL_CACHE_PATH=/cache/torch_kernels \
-    MODEL_PATH=/models/Qwen2-7B-Instruct
+    MODEL_PATH=Qwen/Qwen2-0.5B-Instruct
 
 EXPOSE 8000
 

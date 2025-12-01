@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import os
 import re
+import asyncio
 from typing import List
 
 import torch
@@ -13,7 +13,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 HF_HOME = os.getenv("HF_HOME", "/cache/huggingface")
 TORCH_HOME = os.getenv("TORCH_HOME", "/cache/torch")
 TORCH_KERNEL_CACHE_PATH = os.getenv("TORCH_KERNEL_CACHE_PATH", "/cache/torch_kernels")
-MODEL_PATH = os.getenv("MODEL_PATH", "/models/Qwen2-7B-Instruct")
+MODEL_PATH = os.getenv("MODEL_PATH", "Qwen/Qwen2-0.5B-Instruct")
 
 os.environ["HF_HOME"] = HF_HOME
 os.environ["TORCH_HOME"] = TORCH_HOME
@@ -36,14 +36,12 @@ generation_config.do_sample = True
 generation_config.pad_token_id = tokenizer.eos_token_id
 generation_config.max_new_tokens = int(os.getenv("GEN_MAX_NEW_TOKENS", "45"))
 
-
 def clean_response(text: str) -> str:
     if re.search(r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]", text):
         text = re.split(r"[\u4e00-\u9fff]", text)[0].strip()
         if not text:
             text = "Подсказка недоступна."
     return text.strip()
-
 
 def generate_hint_sync(question: str, prev_hints: List[str] | None = None) -> str:
     prev_hints = prev_hints or []
@@ -72,15 +70,12 @@ def generate_hint_sync(question: str, prev_hints: List[str] | None = None) -> st
     )
     return clean_response(response)
 
-
 class HintRequest(BaseModel):
     question: str
     prev_hints: list[str] = []
 
-
 class HintResponse(BaseModel):
     hint: str
-
 
 @app.post("/neuralnet/model", response_model=HintResponse)
 async def neuralnet_model_endpoint(req: HintRequest) -> HintResponse:
