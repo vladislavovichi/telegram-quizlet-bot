@@ -6,12 +6,11 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from sqlalchemy import select
-
-from app.models.collection import Collection, CollectionItem
+from app.models.collection import Collection
 from app.models.solo_mode import SoloSession
 from app.services.db import get_session
 from app.services.redis_kv import RedisKV
+from app.repos.solo_mode import SoloModeRepo
 
 
 class SoloData:
@@ -25,66 +24,36 @@ class SoloData:
 
     async def list_user_collections(self, user_owner_id: int) -> list[Collection]:
         async with self._session() as session:
-            res = await session.execute(
-                select(Collection)
-                .where(Collection.owner_id == user_owner_id)
-                .order_by(Collection.created_at)
-            )
-            return [row[0] for row in res.all()]
+            repo = SoloModeRepo(session)
+            return await repo.list_user_collections(user_owner_id)
 
     async def get_collection_title_by_id(self, collection_id: int) -> Optional[str]:
         async with self._session() as session:
-            res = await session.execute(
-                select(Collection.title).where(Collection.id == collection_id)
-            )
-            row = res.first()
-            return None if not row else (row[0] or "Без названия")
+            repo = SoloModeRepo(session)
+            return await repo.get_collection_title_by_id(collection_id)
 
     async def get_item_ids(self, collection_id: int) -> List[int]:
         async with self._session() as session:
-            res = await session.execute(
-                select(CollectionItem.id)
-                .where(CollectionItem.collection_id == collection_id)
-                .order_by(CollectionItem.position.asc(), CollectionItem.id.asc())
-            )
-            return [row[0] for row in res.all()]
+            repo = SoloModeRepo(session)
+            return await repo.get_item_ids(collection_id)
 
     async def get_item_qa(self, item_id: int) -> Optional[Tuple[str, str]]:
         async with self._session() as session:
-            res = await session.execute(
-                select(CollectionItem.question, CollectionItem.answer).where(
-                    CollectionItem.id == item_id
-                )
-            )
-            row = res.first()
-            return None if not row else (row[0], row[1])
+            repo = SoloModeRepo(session)
+            return await repo.get_item_qa(item_id)
 
     async def get_collection_title_by_item(self, item_id: int) -> Optional[str]:
         async with self._session() as session:
-            res = await session.execute(
-                select(Collection.title)
-                .join(CollectionItem, CollectionItem.collection_id == Collection.id)
-                .where(CollectionItem.id == item_id)
-            )
-            row = res.first()
-            return None if not row else (row[0] or "Без названия")
+            repo = SoloModeRepo(session)
+            return await repo.get_collection_title_by_item(item_id)
 
     async def get_items_bulk(
         self, item_ids: Iterable[int]
     ) -> Dict[int, Tuple[str, str]]:
-        ids = list(set(map(int, item_ids)))
-        if not ids:
-            return {}
         async with self._session() as session:
-            res = await session.execute(
-                select(
-                    CollectionItem.id, CollectionItem.question, CollectionItem.answer
-                ).where(CollectionItem.id.in_(ids))
-            )
-            out: Dict[int, Tuple[str, str]] = {}
-            for row in res.all():
-                out[int(row[0])] = (row[1], row[2])
-            return out
+            repo = SoloModeRepo(session)
+            return await repo.get_items_bulk(item_ids)
+
 
 
 def _session_key(redis_kv: RedisKV, user_id: int) -> str:
