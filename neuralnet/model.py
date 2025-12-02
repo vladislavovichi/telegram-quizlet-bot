@@ -45,7 +45,9 @@ def clean_response(text: str) -> str:
     return text.strip()
 
 
-def generate_hint_sync(question: str, answer: str, prev_hints: List[str] | None = None) -> str:
+def generate_hint_sync(
+    question: str, answer: str, prev_hints: List[str] | None = None
+) -> str:
     prev_hints = prev_hints or []
 
     prompt = (
