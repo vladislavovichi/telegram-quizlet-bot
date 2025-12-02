@@ -8,9 +8,9 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 from app.models.collection import Collection
 from app.models.solo_mode import SoloSession
+from app.repos.solo_mode import SoloModeRepo
 from app.services.db import get_session
 from app.services.redis_kv import RedisKV
-from app.repos.solo_mode import SoloModeRepo
 
 
 class SoloData:
@@ -53,7 +53,6 @@ class SoloData:
         async with self._session() as session:
             repo = SoloModeRepo(session)
             return await repo.get_items_bulk(item_ids)
-
 
 
 def _session_key(redis_kv: RedisKV, user_id: int) -> str:
