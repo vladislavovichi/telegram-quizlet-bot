@@ -45,14 +45,14 @@ def clean_response(text: str) -> str:
     return text.strip()
 
 
-def generate_hint_sync(question: str, prev_hints: List[str] | None = None) -> str:
+def generate_hint_sync(question: str, answer: str, prev_hints: List[str] | None = None) -> str:
     prev_hints = prev_hints or []
 
     prompt = (
         "ТЫ НЕ ДОЛЖЕН ИСПОЛЬЗОВАТЬ ИЕРОГЛИФЫ. "
         "Ты должен дать ПОДСКАЗКУ, а не полный ответ на вопрос, "
-        "чтобы пользователь сам догадался: "
-        f"{question}"
+        "чтобы пользователь сам догадался. "
+        f"Ответ: {answer}. Вопрос: {question}"
     )
 
     messages = [{"role": "user", "content": prompt}]
@@ -75,6 +75,7 @@ def generate_hint_sync(question: str, prev_hints: List[str] | None = None) -> st
 
 class HintRequest(BaseModel):
     question: str
+    answer: str
     prev_hints: list[str] = []
 
 
@@ -87,7 +88,7 @@ async def neuralnet_model_endpoint(req: HintRequest) -> HintResponse:
     try:
         loop = asyncio.get_running_loop()
         hint = await loop.run_in_executor(
-            None, generate_hint_sync, req.question, req.prev_hints
+            None, generate_hint_sync, req.question, req.answer, req.prev_hints
         )
         return HintResponse(hint=hint)
     except Exception as e:

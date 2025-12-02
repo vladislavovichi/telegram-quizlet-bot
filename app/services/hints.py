@@ -10,9 +10,10 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 
-async def _request_hint(question: str, prev_hints: List[str]) -> str:
+async def _request_hint(question: str, answer: str, prev_hints: List[str]) -> str:
     payload = {
         "question": question,
+        "answer": answer,
         "prev_hints": prev_hints,
     }
 
@@ -29,6 +30,6 @@ async def _request_hint(question: str, prev_hints: List[str]) -> str:
 
 
 async def generate_hint_async(
-    question: str, prev_hints: List[str] | None = None
+    question: str, answer: str, prev_hints: List[str] | None = None
 ) -> str:
-    return await _request_hint(question, prev_hints or [])
+    return await _request_hint(question, answer, prev_hints or [])

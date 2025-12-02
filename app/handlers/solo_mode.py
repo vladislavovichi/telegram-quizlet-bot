@@ -281,11 +281,11 @@ def get_solo_mode_router(async_session_maker, redis_kv: RedisKV) -> Router:
             await cb.answer("Вопрос не найден", show_alert=True)
             return
 
-        q, _ = qa
+        q, a = qa
 
         try:
             await cb.answer("Генерирую подсказку…")
-            new_hint = await generate_hint_async(q, hints)
+            new_hint = await generate_hint_async(q, a, hints)
         except Exception as e:
             log.exception("hint generation failed: %s", e)
             await cb.answer("Не удалось создать подсказку 😔", show_alert=True)
