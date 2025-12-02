@@ -6,10 +6,6 @@ from app.factory import create_app
 
 @pytest.mark.asyncio
 async def test_create_app_smoke(patch_aiogram_network, patch_app_infra):
-    """
-    Smoke test: create_app returns an object with required attributes
-    and uses in-memory DB + FakeRedis (patched in patch_app_infra).
-    """
     app = await create_app()
     assert hasattr(app, "bot")
     assert hasattr(app, "dp")
@@ -32,7 +28,6 @@ async def test_main_starts_polling_and_closes_resources(
     try:
         from aiogram import Dispatcher  # type: ignore
     except Exception:
-        # If aiogram is not installed, just skip: test is about integration
         pytest.skip("aiogram is not available")
 
     async def fake_start_polling(self, bot, *args, **kwargs):
