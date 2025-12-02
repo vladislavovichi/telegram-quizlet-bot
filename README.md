@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-pytest-blueviolet)](./tests)
 
-Qwizlet‑like Telegram‑бот для обучения с помощью карточек.  
+Quizlet‑like Telegram‑бот для обучения с помощью карточек.  
 Пользователь может импортировать свои коллекции (CSV) и коллекции друзей (код), тренироваться в **одиночном режиме**, играть **онлайн с друзьями**, смотреть статистику после игры и получать **AI‑подсказки** по сложным вопросам.
 
 ---
