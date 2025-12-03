@@ -10,7 +10,7 @@ from aiogram.types import BufferedInputFile
 from app.config import settings
 from app.filters.pending import HasCollectionsPendingAction
 from app.keyboards.collections import (
-    collection_cancel_kb,
+    collection_cancel_pending_action_kb,
     collection_clear_confirm_kb,
     collection_delete_confirm_kb,
     collection_deleted_kb,
@@ -118,7 +118,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         key = redis_kv.pending_key(cb.from_user.id)
         await redis_kv.set_json(key, {"type": "col:new"}, ex=redis_kv.ttl_seconds)
         await cb.message.answer(
-            "Введи название новой коллекции:", reply_markup=collection_cancel_kb()
+            "Введи название новой коллекции:", reply_markup=collection_cancel_pending_action_kb()
         )
         await cb.answer()
 
@@ -144,7 +144,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             key, {"type": "col:rename", "cid": cid}, ex=redis_kv.ttl_seconds
         )
         await cb.message.answer(
-            "Введи новое название коллекции:", reply_markup=collection_cancel_kb()
+            "Введи новое название коллекции:", reply_markup=collection_cancel_pending_action_kb()
         )
         await cb.answer()
 
@@ -253,7 +253,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         await cb.message.answer(
             "📝 Введи *вопрос* для карточки:",
             parse_mode="Markdown",
-            reply_markup=collection_cancel_kb(),
+            reply_markup=collection_cancel_pending_action_kb(),
         )
         await cb.answer()
 
@@ -274,7 +274,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         await cb.message.answer(
             "✏️ Введи новый *вопрос*:",
             parse_mode="Markdown",
-            reply_markup=collection_cancel_kb(),
+            reply_markup=collection_cancel_pending_action_kb(),
         )
         await cb.answer()
 
@@ -295,7 +295,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         await cb.message.answer(
             "✏️ Введи новый *ответ*:",
             parse_mode="Markdown",
-            reply_markup=collection_cancel_kb(),
+            reply_markup=collection_cancel_pending_action_kb(),
         )
         await cb.answer()
 
@@ -316,7 +316,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         await cb.message.answer(
             "Пришли новую пару в формате:\n`вопрос || ответ`",
             parse_mode="Markdown",
-            reply_markup=collection_cancel_kb(),
+            reply_markup=collection_cancel_pending_action_kb(),
         )
         await cb.answer()
 
@@ -397,7 +397,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             "_Максимум 40 карточек в коллекции. Дубликаты по вопросу игнорируются._"
         )
         await cb.message.answer(
-            example, parse_mode="Markdown", reply_markup=collection_cancel_kb()
+            example, parse_mode="Markdown", reply_markup=collection_cancel_pending_action_kb()
         )
         await cb.answer("Жду файл")
 
@@ -415,7 +415,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             "```csv\ntitle,question,answer\nГеография,Столица Франции?,Париж\nМатематика,2+2=?,4\n```"
         )
         await cb.message.answer(
-            example, parse_mode="Markdown", reply_markup=collection_cancel_kb()
+            example, parse_mode="Markdown", reply_markup=collection_cancel_pending_action_kb()
         )
         await cb.answer("Жду файл")
 
@@ -444,7 +444,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
             ex=redis_kv.ttl_seconds,
         )
         await cb.message.answer(
-            "Вставьте код, которым поделился друг:", reply_markup=collection_cancel_kb()
+            "Вставьте код, которым поделился друг:", reply_markup=collection_cancel_pending_action_kb()
         )
         await cb.answer()
 
@@ -480,8 +480,8 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
         )
         await cb.answer()
 
-    @router.callback_query(F.data == "col:cancel")
-    async def col_action_cancel(cb: types.CallbackQuery) -> None:
+    @router.callback_query(F.data == "col:cancel_pending")
+    async def col_pending_action_cancel(cb: types.CallbackQuery) -> None:
         key = redis_kv.pending_key(cb.from_user.id)
         await redis_kv.delete(key)
 
@@ -539,7 +539,7 @@ def get_collections_router(async_session_maker, redis_kv) -> Router:
                 await message.answer(
                     "✍️ Теперь введи *ответ*:",
                     parse_mode="Markdown",
-                    reply_markup=collection_cancel_kb(),
+                    reply_markup=collection_cancel_pending_action_kb(),
                 )
                 return
 

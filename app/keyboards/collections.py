@@ -276,8 +276,8 @@ def collection_deleted_kb() -> InlineKeyboardMarkup:
     return b.as_markup()
 
 
-def collection_cancel_kb() -> InlineKeyboardMarkup:
+def collection_cancel_pending_action_kb() -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
-    b.button(text="❌ Отмена", callback_data="col:cancel")
+    b.button(text="❌ Отмена", callback_data="col:cancel_pending")
     b.adjust(1)
     return b.as_markup()
