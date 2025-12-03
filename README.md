@@ -154,6 +154,7 @@ REDIS_DSN=redis://localhost:6379/0
 REDIS_PREFIX=tgquiz
 REDIS_TTL_SEC=900
 NEURALNET_URL=http://localhost:8000
+MODEL_PATH=user/model # Модель на HuggingFace
 ```
 
 ### 4. Поднять БД и Redis локально
