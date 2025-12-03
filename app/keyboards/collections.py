@@ -275,6 +275,7 @@ def collection_deleted_kb() -> InlineKeyboardMarkup:
     b.adjust(1)
     return b.as_markup()
 
+
 def collection_cancel_kb() -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     b.button(text="❌ Отмена", callback_data="col:cancel")
