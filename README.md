@@ -103,7 +103,7 @@ Qwiz/
    # отредактируйте BOT_TOKEN и при необходимости DSN'ы
    ```
 
-2. Запустите Makefile:
+2. Запустите через Makefile:
 
    ```bash
    cd infra
