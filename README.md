@@ -227,13 +227,11 @@ Biology,What carries oxygen in blood?,Hemoglobin
 
 ## Подсказки нейросети
 
-Подсказки реализованы как отдельный HTTP‑сервис (`neuralnet`):
-
-- Dockerfile: `infra/Dockerfile.neural`
+Подсказки реализованы как отдельный HTTP‑сервис `neuralnet`
 - endpoint: `POST /neuralnet/model`
-- конфигурируется через `NEURALNET_URL` и `HINT_ENDPOINT` в `app/config.py`
+- конфигурируется через `NEURALNET_URL` и `HINT_ENDPOINT` в [`Dockerfile.neural`](infra/Dockerfile.neural)
 
-Клиентская часть на стороне бота — в (app/services/hints.py):
+Клиентская часть на стороне бота
 
 - собирает payload (вопрос, ответ, предыдущие подсказки)
 - делает запрос к `HINT_ENDPOINT`
