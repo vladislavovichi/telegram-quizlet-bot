@@ -227,6 +227,11 @@ def item_view_kb(item_id: int, collection_id: int) -> InlineKeyboardMarkup:
     b.row(InlineKeyboardButton(text="🗑 Удалить", callback_data=f"item:del:{item_id}"))
     b.row(
         InlineKeyboardButton(
+            text="➕ Добавить еще карточки", callback_data=f"item:add:{collection_id}"
+        )
+    )
+    b.row(
+        InlineKeyboardButton(
             text="📃 Список карточек", callback_data=f"item:list:{collection_id}:0"
         ),
         InlineKeyboardButton(
@@ -267,5 +272,38 @@ def collection_deleted_kb() -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     b.button(text="➕ Новая коллекция", callback_data="col:new")
     b.button(text="⬅️ К списку коллекций", callback_data="col:list")
+    b.adjust(1)
+    return b.as_markup()
+
+def collection_item_creation_cancel_kb(collection_id: int) -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    b.button(text="✖️ Отмена", callback_data=f"col:open:{collection_id}")
+    b.adjust(1)
+    return b.as_markup()
+
+def collection_creation_cancel_kb() -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    b.button(text="✖️ Отмена", callback_data="col:list")
+    b.adjust(1)
+    return b.as_markup()
+
+def collection_rename_cancel_kb(collection_id: int) -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    b.button(text="✖️ Отмена", callback_data=f"col:open:{collection_id}")
+    b.adjust(1)
+    return b.as_markup()
+
+def collection_import_cancel_kb(collection_id: int | None = None) -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    if collection_id is not None:
+        b.button(text="✖️ Отмена", callback_data=f"col:open:{collection_id}")
+    else:
+        b.button(text="✖️ Отмена", callback_data="col:list")
+    b.adjust(1)
+    return b.as_markup()
+
+def collection_item_changing_cancel_kb(item_id: int) -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    b.button(text="✖️ Отмена", callback_data=f"item:view:{item_id}")
     b.adjust(1)
     return b.as_markup()
