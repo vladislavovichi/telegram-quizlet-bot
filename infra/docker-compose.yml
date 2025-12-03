@@ -37,6 +37,10 @@ services:
     container_name: telegram_quizlet_neuralnet
     env_file:
       - ../config/.env
+    environment:
+      HF_HOME: /cache/huggingface
+      TORCH_HOME: /cache/torch
+      TORCH_KERNEL_CACHE_PATH: /cache/torch_kernels
     volumes:
       - ../models:/models
       - ../hf_cache:/cache/huggingface

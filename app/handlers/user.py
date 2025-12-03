@@ -26,7 +26,7 @@ def get_user_router(async_session_maker, redis_kv: RedisKV) -> Router:
         await ensure_user_exists(async_session_maker, tg.id, tg.username)
 
         text = (
-            "Привет! Я квизлет бот!.\n\n"
+            "Привет! Я Qwiz!\n\n"
             "Воспользуйся клавиатурой ниже для изучения моих возможностей."
         )
         await message.answer(text, reply_markup=main_reply_kb)

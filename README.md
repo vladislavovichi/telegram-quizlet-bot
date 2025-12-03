@@ -229,7 +229,7 @@ Biology,What carries oxygen in blood?,Hemoglobin
 
 Подсказки реализованы как отдельный HTTP‑сервис `neuralnet`
 - endpoint: `POST /neuralnet/model`
-- конфигурируется через `NEURALNET_URL` и `HINT_ENDPOINT` в [`Dockerfile.neural`](infra/Dockerfile.neural)
+- конфигурируется через `NEURALNET_URL` и `MODEL_PATH` в [`.env`](config/.env.template)
 
 Клиентская часть на стороне бота
 

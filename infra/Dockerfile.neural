@@ -20,11 +20,6 @@ RUN pip install --upgrade pip setuptools wheel && \
 
 COPY . .
 
-ENV HF_HOME=/cache/huggingface \
-    TORCH_HOME=/cache/torch \
-    TORCH_KERNEL_CACHE_PATH=/cache/torch_kernels \
-    MODEL_PATH=Qwen/Qwen2-0.5B-Instruct
-
 EXPOSE 8000
 
 CMD ["uvicorn", "neuralnet.model:app", "--host", "0.0.0.0", "--port", "8000"]
