@@ -28,7 +28,6 @@ def make_profile_text(
     return (
         "👤 <b>Мой профиль</b>\n\n"
         f"Имя: <b>{name}</b>\n"
-        f"ID: <code>{tg.id}</code>\n\n"
         f"Коллекций: <b>{profile.collections_count}</b>\n"
         f"Карточек всего: <b>{profile.total_cards}</b>"
     )

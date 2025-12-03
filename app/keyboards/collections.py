@@ -227,6 +227,11 @@ def item_view_kb(item_id: int, collection_id: int) -> InlineKeyboardMarkup:
     b.row(InlineKeyboardButton(text="🗑 Удалить", callback_data=f"item:del:{item_id}"))
     b.row(
         InlineKeyboardButton(
+            text="➕ Добавить еще карточки", callback_data=f"item:add:{collection_id}"
+        )
+    )
+    b.row(
+        InlineKeyboardButton(
             text="📃 Список карточек", callback_data=f"item:list:{collection_id}:0"
         ),
         InlineKeyboardButton(
@@ -267,5 +272,12 @@ def collection_deleted_kb() -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     b.button(text="➕ Новая коллекция", callback_data="col:new")
     b.button(text="⬅️ К списку коллекций", callback_data="col:list")
+    b.adjust(1)
+    return b.as_markup()
+
+
+def collection_cancel_pending_action_kb() -> InlineKeyboardMarkup:
+    b = InlineKeyboardBuilder()
+    b.button(text="❌ Отмена", callback_data="col:cancel_pending")
     b.adjust(1)
     return b.as_markup()
