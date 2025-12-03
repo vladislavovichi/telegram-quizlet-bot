@@ -38,11 +38,18 @@ generation_config.max_new_tokens = int(os.getenv("GEN_MAX_NEW_TOKENS", "45"))
 
 
 def clean_response(text: str) -> str:
-    if re.search(r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]", text):
-        text = re.split(r"[\u4e00-\u9fff]", text)[0].strip()
-        if not text:
-            text = "Подсказка недоступна."
-    return text.strip()
+    text = text.strip().strip("\"'“”«»„“")
+    cjk_pattern = r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]"
+
+    if re.search(cjk_pattern, text):
+        text = re.split(cjk_pattern, text)[0].strip()
+
+    if not text:
+        return "Подсказка недоступна."
+
+    text = text.strip().strip("\"'“”«»„“")
+
+    return text
 
 
 def generate_hint_sync(
@@ -52,9 +59,15 @@ def generate_hint_sync(
 
     prompt = (
         "ТЫ НЕ ДОЛЖЕН ИСПОЛЬЗОВАТЬ ИЕРОГЛИФЫ. "
-        "Ты должен дать ПОДСКАЗКУ, а не полный ответ на вопрос, "
-        "чтобы пользователь сам догадался. "
-        f"Ответ: {answer}. Вопрос: {question}"
+        "Ты — помощник, который даёт краткие и аккуратные ПОДСКАЗКИ, "
+        "а не готовые ответы. Ты не должен раскрывать решение полностью. "
+        "Используй только русский язык и не используй иероглифы.\n\n"
+        "Вот ВОПРОС пользователя:\n"
+        f"{question}\n\n"
+        "Вот ПРАВИЛЬНЫЙ ОТВЕТ (не раскрывай его полностью):\n"
+        f"{answer}\n\n"
+        "Сформулируй такую подсказку, которая мягко направит пользователя "
+        "к правильному ответу, но не подскажет его напрямую."
     )
 
     messages = [{"role": "user", "content": prompt}]
